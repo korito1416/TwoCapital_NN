@@ -128,8 +128,8 @@ params["psi_0"]           = 0.10583
 
 if params["learning_rate_schedule_type"] == "None":
     lr_schedulers = learning_rates
-    # params["optimizers"] = [tf.keras.optimizers.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
-    params["optimizers"] = [tf.keras.optimizers.legacy.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
+    params["optimizers"] = [tf.keras.optimizers.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
+    # params["optimizers"] = [tf.keras.optimizers.legacy.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
 elif params["learning_rate_schedule_type"] == "piecewiseconstant":
     boundaries            = [int(round(x)) for x in np.linspace(0,num_iterations,5)][1:-1]
     values_list           = [[learning_rate / np.power(2,x) for x in range(len(boundaries)+1)] for learning_rate in learning_rates]
@@ -167,7 +167,7 @@ test_model.train()
 
 for log_xi_idx in range(len(log_xi_list)):
     # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-    test_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], 10.25, export_folder_output + "/output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_idx))
+    test_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], 10.25, export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_idx))
 
 
 

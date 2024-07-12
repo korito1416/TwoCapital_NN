@@ -17,6 +17,14 @@ module unload python
 module load cuda/11.2
 module load python/anaconda-2021.05
 
+# prefix="/scratch/midway3/pengyu"
+prefix="/project/lhansen/Capital_NN/TwoCapital_NN/output"
+
+
+
+
+
+
 
 # channel_type="full"
 # channel_type="baseline"
@@ -27,10 +35,9 @@ module load python/anaconda-2021.05
 channel_type=$1
 range_type=$2
 batch_size=$3
-
+SLURM_NTASKS=$4
 echo "${channel_type}, ${range_type}, ${batch_size}"
 
-prefix="/scratch/midway3/bincheng"
 
 
 
@@ -68,9 +75,9 @@ prefix="/scratch/midway3/bincheng"
 # batch_size="512"
 # batch_size="1024"
 
-# num_neurons="32"
+num_neurons="32"
 # num_neurons="48"
-num_neurons="64"
+# num_neurons="64"
 
 
 if [ "${range_type}" -eq 1 ]; then
@@ -85,8 +92,11 @@ else
 
 echo "range_type=${range_type}"
 
-A_g_prime_min=0.14
-A_g_prime_max=0.16
+# A_g_prime_min=0.14
+# A_g_prime_max=0.16
+A_g_prime_min=0.15
+A_g_prime_max=0.15
+
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
 foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}"
 
@@ -111,11 +121,13 @@ pretrained_pre_tech_post_damage_export_folder="None"
 pretrained_post_tech_pre_damage_export_folder="None"
 pretrained_post_tech_post_damage_export_folder="None"
 
-log_xi_min="-3.0"
-log_xi_max="-1.5"
+# log_xi_min="-3.0"
+# log_xi_max="-1.5"
+log_xi_min="5"
+log_xi_max="5.1"
 
-log_xi_baseline_min="10.2"
-log_xi_baseline_max="10.3"
+log_xi_baseline_min="5.0"
+log_xi_baseline_max="5.1"
 
 # batch_size="32"
 # batch_size="128"
@@ -128,14 +140,14 @@ log_xi_baseline_max="10.3"
 
 
 # num_iterations1="1000"
+# num_iterations1="500000"
+
 num_iterations1="500000"
-# num_iterations1="2000000"
+num_iterations2="500000"
 
+# num_iterations1="2000"
+# num_iterations2="2000"
 
-
-
-
-num_iterations2="1000000"
 # num_iterations2="1000"
 # num_iterations2="3000000"
 # A_g_prime_num="0.15"
@@ -153,7 +165,7 @@ learning_rate_schedule_type="None"
 delta="0.025"
 tensorboard='True'
 A_g_prime_length=10
-gamma_3_length=10
+gamma_3_length=5
 
 
 
@@ -184,7 +196,7 @@ echo "\$SLURM_JOB_NAME"
 echo "Program starts \$(date)"
 start_time=\$(date +%s)
 
-python post_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+python version_Bin/post_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
 
 echo "Program ends \$(date)"
 end_time=\$(date +%s)
@@ -211,10 +223,10 @@ start_time=\$(date +%s)
 
 if [ "\${1}" -eq 0 ]; then
     echo "pre_tech_post_damage_channel_original"
-    python pre_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_pre_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+    python version_Bin/pre_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_pre_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
 else
     echo "post_tech_pre_damage_channel_original"
-    python post_tech_pre_damage_channel_pseudo_original.py $job_name $pre_tech_post_damage_export_folder $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+    python version_Bin/post_tech_pre_damage_channel_pseudo_original.py $job_name $pre_tech_post_damage_export_folder $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
 fi
 
 echo "Program ends \$(date)"
@@ -240,7 +252,7 @@ echo "Program starts \$(date)"
 start_time=\$(date +%s)
 
 echo "pre_tech_pre_damage"
-python pre_tech_pre_damage_channel_pseudo_original.py $job_name $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder -10 $log_xi_min $log_xi_max $batch_size $num_iterations2  $pretrained_pre_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+python version_Bin/pre_tech_pre_damage_channel_pseudo_original.py $job_name $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder -10 $log_xi_min $log_xi_max $batch_size $num_iterations2  $pretrained_pre_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
 
 
 

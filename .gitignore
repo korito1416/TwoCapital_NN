@@ -1,0 +1,9 @@
+job-outs/
+bash/
+__pycache__/
+.ipynb_checkpoints/
+model_original_baseline/
+backup/
+output/
+result_save/
+model_results.json

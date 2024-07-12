@@ -21,7 +21,8 @@ log_xi_min="5"
 log_xi_max="5.1"
 
 batch_size="32"
-num_iterations="2000000"
+num_iterations="500000"
+
 A_g_prime="0.15"
 logging_frequency="1000"
 learning_rates="10e-5,10e-5,10e-5,10e-5"
@@ -40,8 +41,8 @@ job_file="pre_tech_pre_damage_simulation_${model_num}.job"
 
 echo "#!/bin/bash
 #SBATCH --job-name=runtd
-#SBATCH --output=runtd.out
-#SBATCH --error=runtd.err
+#SBATCH --output=run.out
+#SBATCH --error=run.err
 #SBATCH --account=pi-lhansen
 #SBATCH --time=0-36:00:00
 #SBATCH --partition=gpu
@@ -54,8 +55,10 @@ module unload python
 module load cuda/11.2
 module load python/anaconda-2021.05
 
-python pre_tech_post_damage.py $pre_tech_post_damage_export_folder $log_xi_min $log_xi_max $batch_size $num_iterations $A_g_prime $pretrained_pre_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard
-python post_tech_pre_damage.py $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder $log_xi_min $log_xi_max $batch_size $num_iterations $A_g_prime $pretrained_post_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard
-python pre_tech_pre_damage.py $pre_tech_pre_damage_export_folder $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder -10 $log_xi_min $log_xi_max $batch_size $num_iterations $A_g_prime $pretrained_pre_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard" > $job_file
+python version_Joe/pre_tech_post_damage.py $pre_tech_post_damage_export_folder $log_xi_min $log_xi_max $batch_size $num_iterations $A_g_prime $pretrained_pre_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard
+python version_Joe/post_tech_pre_damage.py $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder $log_xi_min $log_xi_max $batch_size $num_iterations $A_g_prime $pretrained_post_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard
+python version_Joe/pre_tech_pre_damage.py $pre_tech_pre_damage_export_folder $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder -10 $log_xi_min $log_xi_max $batch_size $num_iterations $A_g_prime $pretrained_pre_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard" > $job_file
 
 sbatch $job_file
+
+
