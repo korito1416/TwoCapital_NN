@@ -249,8 +249,10 @@ class model:
 
         offsets = tf.random.uniform(shape=(self.params['batch_size'],1), minval=0.0, maxval=1.0)
         log_xi = tf.random.shuffle(self.params["state_intervals"]["log_xi"][:-1] +  self.params["state_intervals"]["log_xi_interval_size"] * offsets)
+        # print("log_xi",log_xi)
+        offsets = tf.random.uniform(shape=(self.params['batch_size'],1), minval=0.0, maxval=1.0)
         log_xi_baseline = tf.random.shuffle(self.params["state_intervals"]["log_xi_baseline"][:-1] +  self.params["state_intervals"]["log_xi_baseline_interval_size"] * offsets)
-
+        # print("log_xi_baseline",log_xi_baseline)
 
         ## Sample gamma_3
         #  In pre damage jump states, the evolution process of climate damage can be viewed as a special case where gamma_3 = 0.
@@ -743,7 +745,7 @@ class model:
 
         else: 
 
-            hrhs = rhs + xi_baseline  * tf.pow(h_k,2) / 2  
+            rhs = rhs + xi_baseline  * tf.pow(h_k,2) / 2  
 
 
         if self.params["n_dims"] == 4:
@@ -889,7 +891,7 @@ class model:
                     else:
 
                         rhs = rhs + tf.exp(log_I_g) / self.params["varrho"] * (g_js[j] * (v_j_vals[j] - v) +  \
-                        xi *  (1.0 - g_js[j] + g_js[j] * g_j_logs[j]))/ self.params['A_g_prime_length']
+                        xi_baseline *  (1.0 - g_js[j] + g_js[j] * g_j_logs[j]))/ self.params['A_g_prime_length']
 
                     
                     
@@ -912,7 +914,7 @@ class model:
                     else:
 
                         rhs = rhs + I_d *  (f_ms[k] * ( v_m_vals[k] - v ) + \
-                        xi * (1.0 - f_ms[k] + f_ms[k] * f_m_logs[k]  )) / self.params['gamma_3_length']
+                        xi_baseline * (1.0 - f_ms[k] + f_ms[k] * f_m_logs[k]  )) / self.params['gamma_3_length']
 
 
 
@@ -1052,8 +1054,8 @@ class model:
                         v_diff = v_j - v
                         v_diff_j_vals.append(v_diff)
 
-                        g_j       = tf.exp(-1.0/ xi * (v_j - v))
-                        g_j_log   = -1.0/ xi * (v_j - v)
+                        g_j       = tf.exp(-1.0/ xi_baseline * (v_j - v))
+                        g_j_log   = -1.0/ xi_baseline * (v_j - v)
 
                         g_js.append(g_j)
                         g_j_logs.append( g_j_log  )
@@ -1061,7 +1063,7 @@ class model:
 
 
                         rhs = rhs + tf.exp(log_I_g) / self.params["varrho"] *  (g_js[j] * ( v_j_vals[j] - v ) + \
-                        xi * (1.0 - g_js[j] + g_js[j] * g_j_logs[j] ))/ self.params['A_g_prime_length']
+                        xi_baseline * (1.0 - g_js[j] + g_js[j] * g_j_logs[j] ))/ self.params['A_g_prime_length']
                                         
         ## FOCs
 
@@ -1933,7 +1935,7 @@ class model:
                 state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
                 v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)
                 v_m_vals.append( v_m )
-                f_m       = tf.exp(-1.0/ np.exp(log_xi) * (v_m - v))
+                f_m       = tf.exp(-1.0/ np.exp(log_xi_baseline) * (v_m - v))
                 f_ms.append(f_m)
 
         f_ms_list         = [f_ms]
@@ -1989,7 +1991,7 @@ class model:
                 v_j                    = self.v_post_tech_pre_damage_nn(state_post_tech_pre_damage)
                 v_j_vals.append( v_j )
                 v_diff_temp                        = v_j - v
-                g_j                           = tf.exp(-1.0/  np.exp(log_xi) * (v_j - v))
+                g_j                           = tf.exp(-1.0/  np.exp(log_xi_baseline) * (v_j - v))
                 
                 g_js.append(g_j)
                 
@@ -2029,7 +2031,7 @@ class model:
                     state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
                     
                     v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)
-                    f_m       = tf.exp(-1.0/  np.exp(log_xi) * (v_m - v))
+                    f_m       = tf.exp(-1.0/  np.exp(log_xi_baseline) * (v_m - v))
                     f_ms.append(f_m)
 
             f_ms_list.append(f_ms)
@@ -2055,7 +2057,7 @@ class model:
                     state_post_tech_pre_damage        = tf.reshape(state_post_tech_pre_damage, (1,6))
                     
                     v_j                           = self.v_post_tech_pre_damage_nn(state_post_tech_pre_damage)
-                    g_j       = tf.exp(-1.0/  np.exp(log_xi) * (v_j - v))
+                    g_j       = tf.exp(-1.0/  np.exp(log_xi_baseline) * (v_j - v))
                     g_js.append(g_j)
 
 
