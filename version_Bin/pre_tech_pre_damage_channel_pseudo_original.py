@@ -65,6 +65,7 @@ output_layer_activations   = [None if x == "None" else x for x in output_layer_a
 
 decay_rate                                              = 0.9
 log_xi_list                                             = [float(np.log(xi)) for xi in np.linspace(np.exp(log_xi_min) + 0.02, np.exp(log_xi_max) - 0.02, 10)]
+log_xi_baseline_list                                             = [float(np.log(xi)) for xi in np.linspace(np.exp(log_xi_baseline_min) + 0.02, np.exp(log_xi_baseline_max) - 0.02, 10)]
 
 ## Load parameters
 
@@ -163,13 +164,19 @@ test_model.export_parameters()
 test_model.train()
 # test_model.analyze()
 
-
-
-for log_xi_idx in range(len(log_xi_list)):
+if channel_type == "baseline":
+    for log_xi_baseline_idx in range(len(log_xi_baseline_list)):
     # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-    test_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], 10.25, export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_idx))
+        test_model.simulate_path(100, 1.0 / 12.0, log_xi_min, log_xi_baseline_list[log_xi_baseline_idx], export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_baseline_idx))
+else:
+    for log_xi_idx in range(len(log_xi_list)):
+        # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
+        test_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], log_xi_baseline_min, export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_idx))
 
 
+# for log_xi_idx in range(len(log_xi_list)):
+#     # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
+#     test_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], 10.25, export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_idx))
 
 # if not (pathlib.Path(params["export_folder"]+ "/v_nn_checkpoint_pre_damage_pre_tech"+"_Ag_{}".format(A_g_prime_num)+".index").is_file()):
 #     ## Model has not yet been trained

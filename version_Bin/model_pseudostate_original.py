@@ -527,8 +527,8 @@ class model:
                 # elif self.params["channel_type"]=="damage":
 
                 
-                #     X_pre_tech_post_damage = tf.concat([logK, R, Y, 
-                #     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi, log_I_g], 1)
+                #     X_pre_tech_post_damage = tf.concat([logK, R, Y, log_I_g,
+                #     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi], 1)
                 #     v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
                 #     v_m_vals.append( v_m )
 
@@ -839,7 +839,7 @@ class model:
 
                 # elif self.params["channel_type"]=="damage": 
 
-                #     X_post_tech_post_damage                   = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline], 1)
+                #     X_post_tech_post_damage                   = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], A_g_prime,log_xi_baseline, log_xi_baseline], 1)
     
                 #     v_m                    =  self.v_post_tech_post_damage_nn(X_post_tech_post_damage) 
                 #     v_m_vals.append( v_m )

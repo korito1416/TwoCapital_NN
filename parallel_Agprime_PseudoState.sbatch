@@ -3,8 +3,9 @@
 
 
 #SBATCH --time=0-36:00:00
-#SBATCH --account=pi-lhansen
-#SBATCH --partition=gpu
+#SBATCH --account=ssd
+#SBATCH --partition=ssd-gpu
+#SBATCH --qos=ssd
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=32G  # NOTE DO NOT USE THE --mem= OPTION
@@ -76,8 +77,24 @@ echo "${channel_type}, ${range_type}, ${batch_size}"
 # batch_size="1024"
 
 num_neurons="32"
-# num_neurons="48"
-# num_neurons="64"
+
+
+# log_xi_min="-1.0"
+# log_xi_max="-0.5"
+# log_xi_baseline_min="-1.0"
+# log_xi_baseline_max="-0.5"
+# num_iterations1="2000000"
+# num_iterations2="2000000"
+
+
+log_xi_min="10"
+log_xi_max="10.1"
+log_xi_baseline_min="10"
+log_xi_baseline_max="10.1"
+num_iterations1="500000"
+num_iterations2="500000"
+# num_iterations1="1000000"
+# num_iterations2="1000000"
 
 
 if [ "${range_type}" -eq 1 ]; then
@@ -92,13 +109,13 @@ else
 
 echo "range_type=${range_type}"
 
-# A_g_prime_min=0.14
-# A_g_prime_max=0.16
+# A_g_prime_min=0.19
+# A_g_prime_max=0.22
 A_g_prime_min=0.15
 A_g_prime_max=0.15
 
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}"
+foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logxibaseline_${log_xi_baseline_min}"
 
 fi
 
@@ -121,35 +138,8 @@ pretrained_pre_tech_post_damage_export_folder="None"
 pretrained_post_tech_pre_damage_export_folder="None"
 pretrained_post_tech_post_damage_export_folder="None"
 
-# log_xi_min="-3.0"
-# log_xi_max="-1.5"
-log_xi_min="5"
-log_xi_max="5.1"
-
-log_xi_baseline_min="5.0"
-log_xi_baseline_max="5.1"
-
-# batch_size="32"
-# batch_size="128"
-# batch_size="256"
 
 
-# num_iterations="2000000"
-# num_iterations="1000000"
-# num_iterations="750000"
-
-
-# num_iterations1="1000"
-# num_iterations1="500000"
-
-num_iterations1="500000"
-num_iterations2="500000"
-
-# num_iterations1="2000"
-# num_iterations2="2000"
-
-# num_iterations2="1000"
-# num_iterations2="3000000"
 # A_g_prime_num="0.15"
 logging_frequency="1000"
 learning_rates="10e-5,10e-5,10e-5,10e-5"
