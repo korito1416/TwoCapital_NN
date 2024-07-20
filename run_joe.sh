@@ -13,9 +13,11 @@ pretrained_post_tech_pre_damage_export_folder="None"
 # pretrained_pre_tech_post_damage_export_folder="${pre_tech_pre_damage_export_folder}/pre_tech_post_damage"
 # pretrained_post_tech_pre_damage_export_folder="${pre_tech_pre_damage_export_folder}/post_tech_pre_damage"
 
-log_xi_min="-3.0"
-log_xi_max="-2.0"
+# log_xi_min="-3.0"
+# log_xi_max="-2.0"
 
+log_xi_min="-1.0"
+log_xi_max="-0.5"
 
 # log_xi_min="5"
 # log_xi_max="5.1"

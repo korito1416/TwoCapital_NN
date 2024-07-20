@@ -3,9 +3,8 @@
 
 
 #SBATCH --time=0-36:00:00
-#SBATCH --account=ssd
-#SBATCH --partition=ssd-gpu
-#SBATCH --qos=ssd
+#SBATCH --account=pi-lhansen
+#SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --mem-per-cpu=32G  # NOTE DO NOT USE THE --mem= OPTION
@@ -78,6 +77,12 @@ echo "${channel_type}, ${range_type}, ${batch_size}"
 
 num_neurons="32"
 
+# log_xi_min="-3.0"
+# log_xi_max="-2.0"
+# log_xi_baseline_min="-3.0"
+# log_xi_baseline_max="-2.0"
+# num_iterations1="5000000"
+# num_iterations2="5000000"
 
 # log_xi_min="-1.0"
 # log_xi_max="-0.5"
@@ -86,15 +91,20 @@ num_neurons="32"
 # num_iterations1="2000000"
 # num_iterations2="2000000"
 
+# log_xi_min="0.1"
+# log_xi_max="0.5"
+# log_xi_baseline_min="0.1"
+# log_xi_baseline_max="0.5"
+# num_iterations1="2000000"
+# num_iterations2="2000000"
 
 log_xi_min="10"
 log_xi_max="10.1"
 log_xi_baseline_min="10"
 log_xi_baseline_max="10.1"
-num_iterations1="500000"
-num_iterations2="500000"
-# num_iterations1="1000000"
-# num_iterations2="1000000"
+num_iterations1="5000000"
+num_iterations2="5000000"
+
 
 
 if [ "${range_type}" -eq 1 ]; then
@@ -111,11 +121,11 @@ echo "range_type=${range_type}"
 
 # A_g_prime_min=0.19
 # A_g_prime_max=0.22
-A_g_prime_min=0.15
-A_g_prime_max=0.15
+A_g_prime_min=0.16
+A_g_prime_max=0.19
 
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logxibaseline_${log_xi_baseline_min}"
+foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logxibaseline_${log_xi_baseline_min}_num_iterations${num_iterations1}"
 
 fi
 
