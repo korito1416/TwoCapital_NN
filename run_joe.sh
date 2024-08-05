@@ -16,8 +16,8 @@ pretrained_post_tech_pre_damage_export_folder="None"
 # log_xi_min="-3.0"
 # log_xi_max="-2.0"
 
-log_xi_min="-1.0"
-log_xi_max="-0.5"
+log_xi_min="10"
+log_xi_max="10.1"
 
 # log_xi_min="5"
 # log_xi_max="5.1"
@@ -40,10 +40,11 @@ tensorboard='True'
 echo "Export folder: $pre_tech_pre_damage_export_folder"
 
 job_file="pre_tech_pre_damage_simulation_${model_num}.job"
+job_output_file="pre_tech_pre_damage_simulation_${model_num}.out"
 
 echo "#!/bin/bash
 #SBATCH --job-name=runtd
-#SBATCH --output=run.out
+#SBATCH --output=${job_output_file}
 #SBATCH --error=run.err
 #SBATCH --account=pi-lhansen
 #SBATCH --time=0-36:00:00

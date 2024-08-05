@@ -524,19 +524,19 @@ class model:
                     f_m_logs.append(f_m_log)
 
 
-                # elif self.params["channel_type"]=="damage":
+                elif self.params["channel_type"]=="damage":
 
                 
-                #     X_pre_tech_post_damage = tf.concat([logK, R, Y, log_I_g,
-                #     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi], 1)
-                #     v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
-                #     v_m_vals.append( v_m )
+                    X_pre_tech_post_damage = tf.concat([logK, R, Y, log_I_g,
+                    tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi], 1)
+                    v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
+                    v_m_vals.append( v_m )
 
-                #     f_m       = tf.exp(-1.0/ xi * (v_m - v))
-                #     f_m_log   = -1.0/ xi * (v_m - v)
+                    f_m       = tf.exp(-1.0/ xi * (v_m - v))
+                    f_m_log   = -1.0/ xi * (v_m - v)
 
-                #     f_ms.append(f_m)
-                #     f_m_logs.append(f_m_log)
+                    f_ms.append(f_m)
+                    f_m_logs.append(f_m_log)
 
                 elif self.params["channel_type"]=="technology":
 
@@ -664,10 +664,10 @@ class model:
 
             if self.params["channel_type"]=="full" or self.params["channel_type"]=="technology": 
 
-                h_R = - 1.0 / xi * self.params["sigma_I"] * dv_dR
+                h_R = - 1.0 / xi * self.params["sigma_I"] * dv_dI_g
             else: 
 
-                h_R = - 1.0 / xi_baseline * self.params["sigma_I"] * dv_dR
+                h_R = - 1.0 / xi_baseline * self.params["sigma_I"] * dv_dI_g
 
 
 
@@ -720,7 +720,7 @@ class model:
         # rhs = rhs + xi  * tf.pow(h,2) / 2  ## h appears in all models
 
 
-        ## Add h distortion contribution to drift
+        # Add h distortion contribution to drift
 
         rhs = rhs + ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"] + (dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"] ) * h_k
 
@@ -837,21 +837,21 @@ class model:
                     rhs = rhs + I_d *  (f_ms[k] * ( v_m_vals[k] - v ) + \
                     xi * (1.0 - f_ms[k] + f_ms[k] * f_m_logs[k] )) / self.params['gamma_3_length']
 
-                # elif self.params["channel_type"]=="damage": 
+                elif self.params["channel_type"]=="damage": 
 
-                #     X_post_tech_post_damage                   = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], A_g_prime,log_xi_baseline, log_xi_baseline], 1)
+                    X_post_tech_post_damage                   = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], A_g_prime,log_xi_baseline, log_xi_baseline], 1)
     
-                #     v_m                    =  self.v_post_tech_post_damage_nn(X_post_tech_post_damage) 
-                #     v_m_vals.append( v_m )
+                    v_m                    =  self.v_post_tech_post_damage_nn(X_post_tech_post_damage) 
+                    v_m_vals.append( v_m )
 
-                #     f_m       = tf.exp(-1.0/ xi * (v_m - v))
-                #     f_m_log   = -1.0/ xi * (v_m - v)
+                    f_m       = tf.exp(-1.0/ xi * (v_m - v))
+                    f_m_log   = -1.0/ xi * (v_m - v)
 
-                #     f_ms.append(f_m)
-                #     f_m_logs.append( f_m_log  )
+                    f_ms.append(f_m)
+                    f_m_logs.append( f_m_log  )
 
-                #     rhs = rhs + I_d *  (f_ms[k] * ( v_m_vals[k] - v ) + \
-                #     xi * (1.0 - f_ms[k] + f_ms[k] * f_m_logs[k] )) / self.params['gamma_3_length']
+                    rhs = rhs + I_d *  (f_ms[k] * ( v_m_vals[k] - v ) + \
+                    xi * (1.0 - f_ms[k] + f_ms[k] * f_m_logs[k] )) / self.params['gamma_3_length']
 
                 else:
 
@@ -886,12 +886,12 @@ class model:
                     if self.params["channel_type"]=="full" or self.params["channel_type"]=="technology": 
 
                         rhs = rhs + tf.exp(log_I_g) / self.params["varrho"] * (g_js[j] * (v_j_vals[j] - v) +  \
-                        xi *  (1.0 - g_js[j] + g_js[j] * g_j_logs[j]))/ self.params['A_g_prime_length']
+                        xi * (1.0 - g_js[j] + g_js[j] * g_j_logs[j]))/ self.params['A_g_prime_length']
 
                     else:
 
                         rhs = rhs + tf.exp(log_I_g) / self.params["varrho"] * (g_js[j] * (v_j_vals[j] - v) +  \
-                        xi_baseline *  (1.0 - g_js[j] + g_js[j] * g_j_logs[j]))/ self.params['A_g_prime_length']
+                        xi_baseline * (1.0 - g_js[j] + g_js[j] * g_j_logs[j]))/ self.params['A_g_prime_length']
 
                     
                     
@@ -1077,9 +1077,9 @@ class model:
             FOC_I   = - self.params["delta"] / inside_log * tf.exp(-i_I_capped) + self.params["psi_0"] * self.params["psi_1"] * \
             tf.exp(-i_I_capped  * (self.params["psi_1"])) * tf.exp( self.params["psi_1"] * (logK -  log_I_g) )  * dv_dI_g 
 
-            return rhs, pv, dv_dY, c, 1 + self.params["phi_g"] * i_g, 1 + self.params["phi_d"] * i_d, i_I, v_diff_j_vals, dv_dI_g, marginal_util_c_over_k, FOC_g, FOC_d, FOC_I
+            return rhs, pv, dv_dY, c, 1 + self.params["phi_g"] * i_g, 1 + self.params["phi_d"] * i_d, i_I, v_diff_j_vals, dv_dI_g, marginal_util_c_over_k, FOC_g, FOC_d, FOC_I, h_k,h_y
         else:
-            return rhs, pv, dv_dY, c, 1 + self.params["phi_g"] * i_g, 1 + self.params["phi_d"] * i_d, marginal_util_c_over_k, FOC_g, FOC_d
+            return rhs, pv, dv_dY, c, 1 + self.params["phi_g"] * i_g, 1 + self.params["phi_d"] * i_d, marginal_util_c_over_k, FOC_g, FOC_d, h_k,h_y
 
     @tf.function
     def objective_fn(self, logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g = None, compute_control = False, training = True):
@@ -1089,9 +1089,9 @@ class model:
         ## objectives.
 
         if self.params["n_dims"] == 4:
-            rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, i_I, v_diff_j_vals, dv_dI_g, marginal_utility_of_consumption_norm, FOC_g, FOC_d, FOC_I        = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
+            rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, i_I, v_diff_j_vals, dv_dI_g, marginal_utility_of_consumption_norm, FOC_g, FOC_d, FOC_I,h_k,h_y        = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
         else:
-            rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d                       = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
+            rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d ,h_k,h_y                      = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
 
         epsilon = 10e-4
         negative_consumption_boolean = tf.reshape( tf.cast( c < 0.000000001, tf.float32 ),  [self.params["batch_size"], 1])
@@ -1313,32 +1313,29 @@ class model:
         print("Training with " + self.params["model_type"])
 
         # begin sgd iteration
+                # begin sgd iteration
         for step in range(self.params["num_iterations"]):
             if step % self.params["logging_frequency"] == 0:
                 ## Sample test data
                 if "pre_tech" in self.params["model_type"]:
                     logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g = self.sample()
                 else:
-                    logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline = self.sample() 
-                    log_I_g = None 
+                    logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline = self.sample()
+                    log_I_g = None
 
                 ## Compute test loss
-                test_losses = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, training = False)
+                test_losses = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, training=False)
 
                 ## Update normalization constants
-
-
                 if self.params["n_dims"] == 4:
-                    rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, i_I, v_diff, dv_dI_g, marginal_utility_of_consumption_norm, FOC_g, FOC_d, FOC_I        = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
+                    rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, i_I, v_diff, dv_dI_g, marginal_utility_of_consumption_norm, FOC_g, FOC_d, FOC_I,h_k, h_y = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
                 else:
-                    rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d                                = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
+                    rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d, h_k, h_y = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
 
-                
-                self.flow_pv_norm = (1.0 - self.params['norm_weight']) * self.flow_pv_norm + self.params['norm_weight'] * pv 
+                self.flow_pv_norm = (1.0 - self.params['norm_weight']) * self.flow_pv_norm + self.params['norm_weight'] * pv
                 self.marginal_utility_of_consumption_norm = (1.0 - self.params['norm_weight']) * self.marginal_utility_of_consumption_norm + self.params['norm_weight'] * marginal_utility_of_consumption_norm
 
                 ## Store best neural networks
-
                 if (test_losses[0] < min_loss):
                     min_loss = test_losses[0]
 
@@ -1351,93 +1348,85 @@ class model:
 
                 ## Generate checkpoints for tensorboard
                 if self.params['tensorboard']:
-                    grad_v_nn     = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= False, training=True)
-                    grad_controls = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= True, training=True)
+                    grad_v_nn = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=False, training=True)
+                    grad_controls = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=True, training=True)
 
                     with self.test_writer.as_default():
-
                         ## Export learning rates
                         for optimizer_idx in range(len(self.params['optimizers'])):
                             if "sgd" in self.params['learning_rate_schedule_type']:
-                                tf.summary.scalar('learning_rate_' + str(optimizer_idx), self.params["optimizers"][optimizer_idx]._decayed_lr(tf.float32), step = step)
+                                tf.summary.scalar('learning_rate_' + str(optimizer_idx), self.params["optimizers"][optimizer_idx]._decayed_lr(tf.float32), step=step)
                             else:
-                                tf.summary.scalar('learning_rate_' + str(optimizer_idx), self.params["optimizers"][optimizer_idx].lr, step = step)
+                                tf.summary.scalar('learning_rate_' + str(optimizer_idx), self.params["optimizers"][optimizer_idx].lr, step=step)
 
                         ## Export losses
-                        tf.summary.scalar('loss_v', test_losses[0], step = step)
-                        tf.summary.scalar('loss_negative_mean_rhs', test_losses[1], step = step)
-                        tf.summary.scalar('loss_dv_dY', test_losses[2], step = step)
-                        tf.summary.scalar('loss_c', test_losses[3], step = step)
-                        tf.summary.scalar('loss_inside_log_i_g', test_losses[4], step = step)
-                        tf.summary.scalar('loss_inside_log_i_g', test_losses[5], step = step)
+                        tf.summary.scalar('h_k', tf.reduce_mean(h_k), step=step)
+                        tf.summary.scalar('h_y', tf.reduce_mean(h_y), step=step)
+                        tf.summary.scalar('loss_v', test_losses[0], step=step)
+                        tf.summary.scalar('loss_negative_mean_rhs', test_losses[1], step=step)
+                        tf.summary.scalar('loss_dv_dY', test_losses[2], step=step)
+                        tf.summary.scalar('loss_c', test_losses[3], step=step)
+                        tf.summary.scalar('loss_inside_log_i_g', test_losses[4], step=step)
+                        tf.summary.scalar('loss_inside_log_i_d', test_losses[5], step=step)
+                        tf.summary.scalar('loss_FOC_g', test_losses[6], step=step)
+                        tf.summary.scalar('loss_FOC_d', test_losses[7], step=step)
+                        tf.summary.scalar('pv_norm', tf.reduce_mean(self.flow_pv_norm), step=step)
+                        tf.summary.scalar('marginal_util_consumption_norm', tf.reduce_mean(self.marginal_utility_of_consumption_norm), step=step)
 
-                        tf.summary.scalar('loss_FOC_g', test_losses[6], step = step)
-                        tf.summary.scalar('loss_FOC_d', test_losses[7], step = step)
-
-                        tf.summary.scalar('pv_norm', tf.reduce_mean(self.flow_pv_norm), step = step)
-                        tf.summary.scalar('marginal_util_consumption_norm', 
-                                              tf.reduce_mean(self.marginal_utility_of_consumption_norm), step = step)
-                        
                         if self.params['n_dims'] == 4:
-                            tf.summary.scalar('loss_FOC_I', test_losses[8], step = step)
-                            tf.summary.scalar('loss_i_I', test_losses[9], step = step)
-                            tf.summary.scalar('loss_v_diff', test_losses[10], step = step)
-                            tf.summary.scalar('loss_dv_dI_g', test_losses[11], step = step)
+                            tf.summary.scalar('loss_FOC_I', test_losses[8], step=step)
+                            tf.summary.scalar('loss_i_I', test_losses[9], step=step)
+                            tf.summary.scalar('loss_v_diff', test_losses[10], step=step)
+                            tf.summary.scalar('loss_dv_dI_g', test_losses[11], step=step)
 
                         ## Export weights and gradients
-
                         for layer in self.v_nn.layers:
-                                                        
                             for W in layer.weights:
-                                tf.summary.histogram(W.name + '_weights', W, step = step)
+                                tf.summary.histogram(W.name + '_weights', W, step=step)
 
                         for g in range(len(self.v_nn.trainable_variables)):
-                            tf.summary.histogram( self.v_nn.trainable_variables[g].name + '_grads', grad_v_nn[g], step = step )
+                            tf.summary.histogram(self.v_nn.trainable_variables[g].name + '_grads', grad_v_nn[g], step=step)
 
                         for layer in self.i_g_nn.layers:
                             for W in layer.weights:
-                                tf.summary.histogram(W.name + '_weights', W, step = step)
+                                tf.summary.histogram(W.name + '_weights', W, step=step)
 
                         for g in range(len(self.i_g_nn.trainable_variables)):
-                            tf.summary.histogram( self.i_g_nn.trainable_variables[g].name + '_grads', grad_controls[g], step = step )
+                            tf.summary.histogram(self.i_g_nn.trainable_variables[g].name + '_grads', grad_controls[g], step=step)
 
                         for layer in self.i_d_nn.layers:
                             for W in layer.weights:
-                                tf.summary.histogram(W.name + '_weights', W, step = step)
+                                tf.summary.histogram(W.name + '_weights', W, step=step)
 
                         for g in range(len(self.i_d_nn.trainable_variables)):
-                            tf.summary.histogram( self.i_d_nn.trainable_variables[g].name + '_grads', 
-                                                 grad_controls[len(self.i_g_nn.trainable_variables) + g], step = step )
+                            tf.summary.histogram(self.i_d_nn.trainable_variables[g].name + '_grads', grad_controls[len(self.i_g_nn.trainable_variables) + g], step=step)
 
-                        if self.params['n_dims'] == 4:             
-
+                        if self.params['n_dims'] == 4:
                             for layer in self.i_I_nn.layers:
                                 for W in layer.weights:
-                                    tf.summary.histogram(W.name + '_weights', W, step = step)
+                                    tf.summary.histogram(W.name + '_weights', W, step=step)
 
                             for g in range(len(self.i_I_nn.trainable_variables)):
-                                tf.summary.histogram( self.i_I_nn.trainable_variables[g].name + '_grads', 
-                                                    grad_controls[len(self.i_d_nn.trainable_variables) + len(self.i_g_nn.trainable_variables) + g], step = step )
+                                tf.summary.histogram(self.i_I_nn.trainable_variables[g].name + '_grads', grad_controls[len(self.i_d_nn.trainable_variables) + len(self.i_g_nn.trainable_variables) + g], step=step)
 
                 elapsed_time = time.time() - start_time
 
-                ## Appendinging to training history
-                entry = [step] + list(test_losses) + [ tf.reduce_mean(self.flow_pv_norm), tf.reduce_mean(self.marginal_utility_of_consumption_norm), elapsed_time]
-
+                ## Appending to training history
+                entry = [step] + list(test_losses) + [tf.reduce_mean(self.flow_pv_norm), tf.reduce_mean(self.marginal_utility_of_consumption_norm), tf.reduce_mean(h_k), tf.reduce_mean(h_y), elapsed_time]
                 training_history.append(entry)
 
                 ## Save training history
                 if self.params["n_dims"] == 4:
-                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,elapsed_time'
+                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_k,h_y,elapsed_time'
                 else:
-                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,elapsed_time'
+                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_k,h_y,elapsed_time'
 
-                np.savetxt(  self.params["export_folder"] + '/training_history.csv',
-                    training_history,
-                    fmt= ['%d'] + ['%.5e'] * len(test_losses) + ['%.5e','%.5e','%d'], # ['%d', '%.5e', '%.5e', '%.5e', '%d'],
-                    delimiter=",",
-                    header=header,
-                    comments='')
+                np.savetxt(self.params["export_folder"] + '/training_history.csv',
+                        training_history,
+                        fmt=['%d'] + ['%.5e'] * len(test_losses) + ['%.5e', '%.5e', '%.5e', '%.5e', '%d'],
+                        delimiter=",",
+                        header=header,
+                        comments='')
         
             self.train_step()
 
@@ -1459,17 +1448,16 @@ class model:
 
         ## Save training history
         if self.params["n_dims"] == 4:
-            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,elapsed_time'
+            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_k,h_y,elapsed_time'
         else:
-            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,elapsed_time'
+            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_k,h_y,elapsed_time'
 
-        np.savetxt(  self.params["export_folder"] + '/training_history.csv',
-            training_history,
-            fmt= ['%d'] + ['%.5e'] * len(test_losses) + ['%.5e','%.5e','%d'], # ['%d', '%.5e', '%.5e', '%.5e', '%d'],
-            delimiter=",",
-            header=header,
-            comments='')
-
+        np.savetxt(self.params["export_folder"] + '/training_history.csv',
+                training_history,
+                fmt=['%d'] + ['%.5e'] * len(test_losses) + ['%.5e', '%.5e', '%.5e', '%.5e', '%d'],
+                delimiter=",",
+                header=header,
+                comments='')
         ## Plot losses
 
         loss_v_history                   = [history_record[1] for history_record in training_history]
