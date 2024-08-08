@@ -1313,7 +1313,7 @@ class model:
         print("Training with " + self.params["model_type"])
 
         # begin sgd iteration
-                # begin sgd iteration
+        # begin sgd iteration
         for step in range(self.params["num_iterations"]):
             if step % self.params["logging_frequency"] == 0:
                 ## Sample test data
@@ -1412,22 +1412,22 @@ class model:
                 elapsed_time = time.time() - start_time
 
                 ## Appending to training history
-                entry = [step] + list(test_losses) + [tf.reduce_mean(self.flow_pv_norm), tf.reduce_mean(self.marginal_utility_of_consumption_norm), tf.reduce_mean(h_k), tf.reduce_mean(h_y), elapsed_time]
+                entry = [step] + list(test_losses) + [tf.reduce_mean(self.flow_pv_norm), tf.reduce_mean(self.marginal_utility_of_consumption_norm), tf.reduce_mean(h_k), tf.reduce_mean(h_y), tf.reduce_mean(dv_dY), elapsed_time]
                 training_history.append(entry)
 
                 ## Save training history
                 if self.params["n_dims"] == 4:
-                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_k,h_y,elapsed_time'
+                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_k,h_y,dv_dY,elapsed_time'
                 else:
-                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_k,h_y,elapsed_time'
+                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_k,h_y,dv_dY,elapsed_time'
 
                 np.savetxt(self.params["export_folder"] + '/training_history.csv',
                         training_history,
-                        fmt=['%d'] + ['%.5e'] * len(test_losses) + ['%.5e', '%.5e', '%.5e', '%.5e', '%d'],
+                        fmt=['%d'] + ['%.5e'] * len(test_losses) + ['%.5e', '%.5e', '%.5e', '%.5e', '%.5e', '%d'],
                         delimiter=",",
                         header=header,
                         comments='')
-        
+
             self.train_step()
 
         ## Use best neural networks 
@@ -1436,7 +1436,7 @@ class model:
         self.i_d_nn.set_weights(best_i_d_nn.get_weights())
         if self.params["n_dims"] == 4:
             self.i_I_nn.set_weights(best_i_I_nn.get_weights())
-        
+
 
         ## Export last check point
         self.v_nn.save_weights( self.params["export_folder"] + '/v_nn_checkpoint_' + self.params["model_type"])
@@ -1448,13 +1448,13 @@ class model:
 
         ## Save training history
         if self.params["n_dims"] == 4:
-            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_k,h_y,elapsed_time'
+            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_k,h_y,dv_dY,elapsed_time'
         else:
-            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_k,h_y,elapsed_time'
+            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_k,h_y,dv_dY,elapsed_time'
 
         np.savetxt(self.params["export_folder"] + '/training_history.csv',
                 training_history,
-                fmt=['%d'] + ['%.5e'] * len(test_losses) + ['%.5e', '%.5e', '%.5e', '%.5e', '%d'],
+                fmt=['%d'] + ['%.5e'] * len(test_losses) + ['%.5e', '%.5e', '%.5e', '%.5e', '%.5e', '%d'],
                 delimiter=",",
                 header=header,
                 comments='')
@@ -2159,10 +2159,10 @@ class model:
 
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="technology": 
 
-            h_R = - 1.0 / tf.exp(log_xi) * self.params["sigma_I"] * dv_dlogR.numpy()
+            h_R = - 1.0 / tf.exp(log_xi) * self.params["sigma_I"] * dv_dlogIg.numpy()
         else: 
 
-            h_R = - 1.0 / tf.exp(log_xi_baseline) * self.params["sigma_I"] * dv_dlogR.numpy()
+            h_R = - 1.0 / tf.exp(log_xi_baseline) * self.params["sigma_I"] * dv_dlogIg.numpy()
 
 
 
@@ -2415,6 +2415,7 @@ class model:
         # plt.ylim(7.5,11.5)
         plt.legend(loc='upper left')
         plt.savefig(export_folder + "/Ems_Comp_IMSI_2023.png")
+        np.savetxt(export_folder +  "/Emissions.txt", data_dict["E"])
         plt.close()
 
 
@@ -2426,6 +2427,7 @@ class model:
         plt.title(r"Green Investment ($I_g$)")
         plt.legend(loc='upper left')
         plt.savefig(export_folder + '/Ig_Comp_IMSI_2023.png')
+        np.savetxt(export_folder +  "/Ig.txt", data_dict["I_g"])
         plt.close()
 
         plt.figure()
@@ -2434,6 +2436,7 @@ class model:
         plt.title(r"Dirty Investment ($I_d$)")
         plt.legend(loc='lower left')
         plt.savefig(export_folder + '/Id_Comp_IMSI_2023.png')
+        np.savetxt(export_folder +  "/Id.txt", data_dict["I_d"])
         plt.close()
 
 
@@ -2444,6 +2447,7 @@ class model:
         plt.title(r"R&D Investment as % of Output ($I_{\kappa}/Y$)")
         plt.legend(loc='upper right')
         plt.savefig(export_folder + '/RD_Comp_IMSI_2023.png')
+        np.savetxt(export_folder +  "/RD.txt", data_dict["I_I/Y"])
         plt.close()
 
 
@@ -2454,6 +2458,7 @@ class model:
         plt.ylim(0,1)
         plt.legend(loc='lower right')
         plt.savefig(export_folder + '/DmgJumpProb_Comp_IMSI_2023.png')
+        np.savetxt(export_folder +  "/DmgJumpProb.txt", data_dict["distorted_dmg_jump_prob"])        
         plt.close()
 
 
@@ -2465,20 +2470,22 @@ class model:
         plt.ylim(0,1)
         plt.legend(loc='lower right')
         plt.savefig(export_folder + '/TechJumpProb_Comp_IMSI_2023.png')
+        np.savetxt(export_folder +  "/TechJumpProb.txt", data_dict["distorted_tech_jump_prob"])         
         plt.close()
 
 
         ## Plot bar chart
         baseline = np.ones(self.params["gamma_3_length"]) / self.params["gamma_3_length"]
         distorted = np.ones(self.params["gamma_3_length"]) / self.params["gamma_3_length"]
+        bin_edges = np.linspace(0, 1/3, 6)
         x1       = np.linspace(0,1/3,self.params["gamma_3_length"])
         for i in range(self.params["gamma_3_length"]):
             distorted[i] = data_dict['f_m_'+str(i)+'_simulation_norm'][-1] 
 
         print("Climate Models: {}"  .format(distorted))
 
-        plt.hist(x1, weights=baseline, label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey")
-        plt.hist(x1, weights=distorted, label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey")
+        plt.hist(x1, weights=baseline, bins=bin_edges,label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey")
+        plt.hist(x1, weights=distorted, bins=bin_edges, label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey")
         plt.title("Distorted Probability of Damage Models")
         plt.xlabel(r"$\gamma_3$")
         plt.legend()
