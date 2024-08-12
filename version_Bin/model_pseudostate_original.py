@@ -652,12 +652,18 @@ class model:
 
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
 
-            h_k = - 1.0 / xi * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"] + (dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"] )
+            # h_k = - 1.0 / xi * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"] + (dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"] )
+
+            h_d = - 1.0 / xi * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"])
+            h_g = - 1.0 / xi * ((dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"])
+
 
         else: 
 
-            h_k = - 1.0 / xi_baseline * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"] + (dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"] )
-
+            # h_k = - 1.0 / xi_baseline * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"] + (dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"] )
+            
+            h_d = - 1.0 / xi_baseline * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"])
+            h_g = - 1.0 / xi_baseline * ((dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"])
 
         if self.params["n_dims"] == 4:
 
@@ -668,6 +674,10 @@ class model:
             else: 
 
                 h_R = - 1.0 / xi_baseline * self.params["sigma_I"] * dv_dI_g
+
+
+
+
 
 
 
@@ -722,12 +732,20 @@ class model:
 
         # Add h distortion contribution to drift
 
-        rhs = rhs + ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"] + (dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"] ) * h_k
 
         if self.params["n_dims"] == 4:
 
             rhs = rhs + self.params["sigma_I"] * h_R * dv_dI_g
 
+
+        if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
+            
+            rhs = rhs + (- 1.0 / xi ) * ((dv_dlogK - R * dv_dR )**2) * ((1-R)**2) * (self.params["sigma_d"]**2)
+
+            rhs = rhs + (- 1.0 / xi ) * ((dv_dlogK + (1-R) * dv_dR )**2) * (R**2) * (self.params["sigma_g"]**2)
+
+            # rhs = rhs + h_d * ((dv_dlogK - R * dv_dR)*(1-R)*self.params["sigma_d"])
+            # rhs = rhs + h_g *((dv_dlogK + (1-R) * dv_dR)*R*self.params["sigma_g"])
 
         ## Add quadratic h distortion contribution: capital, climate, technology
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="climate": 
@@ -741,11 +759,16 @@ class model:
 
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
 
-            rhs = rhs + xi  * tf.pow(h_k,2) / 2  
+            rhs = rhs + xi  * tf.pow(h_d,2) / 2  
+
+            rhs = rhs + xi  * tf.pow(h_g,2) / 2  
+
 
         else: 
 
-            rhs = rhs + xi_baseline  * tf.pow(h_k,2) / 2  
+            rhs = rhs + xi_baseline  * tf.pow(h_d,2) / 2  
+
+            rhs = rhs + xi_baseline  * tf.pow(h_g,2) / 2  
 
 
         if self.params["n_dims"] == 4:
@@ -1077,9 +1100,9 @@ class model:
             FOC_I   = - self.params["delta"] / inside_log * tf.exp(-i_I_capped) + self.params["psi_0"] * self.params["psi_1"] * \
             tf.exp(-i_I_capped  * (self.params["psi_1"])) * tf.exp( self.params["psi_1"] * (logK -  log_I_g) )  * dv_dI_g 
 
-            return rhs, pv, dv_dY, c, 1 + self.params["phi_g"] * i_g, 1 + self.params["phi_d"] * i_d, i_I, v_diff_j_vals, dv_dI_g, marginal_util_c_over_k, FOC_g, FOC_d, FOC_I, h_k,h_y
+            return rhs, pv, dv_dY, c, 1 + self.params["phi_g"] * i_g, 1 + self.params["phi_d"] * i_d, i_I, v_diff_j_vals, dv_dI_g, marginal_util_c_over_k, FOC_g, FOC_d, FOC_I, h_d,h_y
         else:
-            return rhs, pv, dv_dY, c, 1 + self.params["phi_g"] * i_g, 1 + self.params["phi_d"] * i_d, marginal_util_c_over_k, FOC_g, FOC_d, h_k,h_y
+            return rhs, pv, dv_dY, c, 1 + self.params["phi_g"] * i_g, 1 + self.params["phi_d"] * i_d, marginal_util_c_over_k, FOC_g, FOC_d, h_d,h_y
 
     @tf.function
     def objective_fn(self, logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g = None, compute_control = False, training = True):
@@ -1089,9 +1112,9 @@ class model:
         ## objectives.
 
         if self.params["n_dims"] == 4:
-            rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, i_I, v_diff_j_vals, dv_dI_g, marginal_utility_of_consumption_norm, FOC_g, FOC_d, FOC_I,h_k,h_y        = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
+            rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, i_I, v_diff_j_vals, dv_dI_g, marginal_utility_of_consumption_norm, FOC_g, FOC_d, FOC_I,h_d,h_y        = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
         else:
-            rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d ,h_k,h_y                      = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
+            rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d ,h_d,h_y                      = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
 
         epsilon = 10e-4
         negative_consumption_boolean = tf.reshape( tf.cast( c < 0.000000001, tf.float32 ),  [self.params["batch_size"], 1])
@@ -1328,9 +1351,9 @@ class model:
 
                 ## Update normalization constants
                 if self.params["n_dims"] == 4:
-                    rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, i_I, v_diff, dv_dI_g, marginal_utility_of_consumption_norm, FOC_g, FOC_d, FOC_I,h_k, h_y = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
+                    rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, i_I, v_diff, dv_dI_g, marginal_utility_of_consumption_norm, FOC_g, FOC_d, FOC_I,h_d, h_y = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
                 else:
-                    rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d, h_k, h_y = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
+                    rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d, h_d, h_y = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
 
                 self.flow_pv_norm = (1.0 - self.params['norm_weight']) * self.flow_pv_norm + self.params['norm_weight'] * pv
                 self.marginal_utility_of_consumption_norm = (1.0 - self.params['norm_weight']) * self.marginal_utility_of_consumption_norm + self.params['norm_weight'] * marginal_utility_of_consumption_norm
@@ -1360,7 +1383,7 @@ class model:
                                 tf.summary.scalar('learning_rate_' + str(optimizer_idx), self.params["optimizers"][optimizer_idx].lr, step=step)
 
                         ## Export losses
-                        tf.summary.scalar('h_k', tf.reduce_mean(h_k), step=step)
+                        tf.summary.scalar('h_d', tf.reduce_mean(h_d), step=step)
                         tf.summary.scalar('h_y', tf.reduce_mean(h_y), step=step)
                         tf.summary.scalar('loss_v', test_losses[0], step=step)
                         tf.summary.scalar('loss_negative_mean_rhs', test_losses[1], step=step)
@@ -1412,14 +1435,14 @@ class model:
                 elapsed_time = time.time() - start_time
 
                 ## Appending to training history
-                entry = [step] + list(test_losses) + [tf.reduce_mean(self.flow_pv_norm), tf.reduce_mean(self.marginal_utility_of_consumption_norm), tf.reduce_mean(h_k), tf.reduce_mean(h_y), tf.reduce_mean(dv_dY), elapsed_time]
+                entry = [step] + list(test_losses) + [tf.reduce_mean(self.flow_pv_norm), tf.reduce_mean(self.marginal_utility_of_consumption_norm), tf.reduce_mean(h_d), tf.reduce_mean(h_y), tf.reduce_mean(dv_dY), elapsed_time]
                 training_history.append(entry)
 
                 ## Save training history
                 if self.params["n_dims"] == 4:
-                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_k,h_y,dv_dY,elapsed_time'
+                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_d,h_y,dv_dY,elapsed_time'
                 else:
-                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_k,h_y,dv_dY,elapsed_time'
+                    header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_d,h_y,dv_dY,elapsed_time'
 
                 np.savetxt(self.params["export_folder"] + '/training_history.csv',
                         training_history,
@@ -1448,9 +1471,9 @@ class model:
 
         ## Save training history
         if self.params["n_dims"] == 4:
-            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_k,h_y,dv_dY,elapsed_time'
+            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,loss_FOC_I,loss_i_I,loss_v_diff,loss_dv_dI_g,pv_norm,marginal_util_consumption_norm,h_d,h_y,dv_dY,elapsed_time'
         else:
-            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_k,h_y,dv_dY,elapsed_time'
+            header = 'step,loss_v,loss_negative_mean_rhs,loss_dv_dY,loss_c,loss_inside_log_i_g,loss_inside_log_i_d,loss_FOC_g,loss_FOC_d,pv_norm,marginal_util_consumption_norm,h_d,h_y,dv_dY,elapsed_time'
 
         np.savetxt(self.params["export_folder"] + '/training_history.csv',
                 training_history,
@@ -2148,13 +2171,17 @@ class model:
 
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
 
-            h_k = - 1.0 / tf.exp(log_xi) * ((dv_dlogK.numpy() - R * dv_dlogR.numpy() ) * (1-R) * self.params["sigma_d"] + (dv_dlogK.numpy() + (1-R) * dv_dlogR.numpy() ) * R * self.params["sigma_g"] )
+            # h_k = - 1.0 / tf.exp(log_xi) * ((dv_dlogK.numpy() - R * dv_dlogR.numpy() ) * (1-R) * self.params["sigma_d"] + (dv_dlogK.numpy() + (1-R) * dv_dlogR.numpy() ) * R * self.params["sigma_g"] )
+            
+            h_d = - 1.0 / tf.exp(log_xi) * ((dv_dlogK.numpy() - R * dv_dlogR.numpy() ) * (1-R) * self.params["sigma_d"])
+            h_g = - 1.0 / tf.exp(log_xi) * ((dv_dlogK.numpy() + (1-R) * dv_dlogR.numpy() ) * R * self.params["sigma_g"])
 
         else: 
 
-            h_k = - 1.0 /  tf.exp(log_xi_baseline) * ((dv_dlogK.numpy() - R * dv_dlogR.numpy() ) * (1-R) * self.params["sigma_d"] + (dv_dlogK.numpy() + (1-R) * dv_dlogR.numpy() ) * R * self.params["sigma_g"] )
+            # h_k = - 1.0 /  tf.exp(log_xi_baseline) * ((dv_dlogK.numpy() - R * dv_dlogR.numpy() ) * (1-R) * self.params["sigma_d"] + (dv_dlogK.numpy() + (1-R) * dv_dlogR.numpy() ) * R * self.params["sigma_g"] )
 
-
+            h_d = - 1.0 / tf.exp(log_xi_baseline) * ((dv_dlogK.numpy() - R * dv_dlogR.numpy() ) * (1-R) * self.params["sigma_d"])
+            h_g = - 1.0 / tf.exp(log_xi_baseline) * ((dv_dlogK.numpy() + (1-R) * dv_dlogR.numpy() ) * R * self.params["sigma_g"])
 
 
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="technology": 
@@ -2349,14 +2376,20 @@ class model:
 
 
         plt.figure()
-        plt.plot(time_vec,h_k)
+        plt.plot(time_vec,h_d)
         plt.xlabel("Years")
-        plt.title(r'$h$: Total Capital')
-        plt.savefig(export_folder + "/h_k_simulation.png")
-        np.savetxt(export_folder +  "/h_k_simulation.txt", h_k)
+        plt.title(r'$h$: Dirty Capital')
+        plt.savefig(export_folder + "/h_d_simulation.png")
+        np.savetxt(export_folder +  "/h_d_simulation.txt", h_d)
         plt.close()
 
-
+        plt.figure()
+        plt.plot(time_vec,h_g)
+        plt.xlabel("Years")
+        plt.title(r'$h$: Green Capital')
+        plt.savefig(export_folder + "/h_g_simulation.png")
+        np.savetxt(export_folder +  "/h_g_simulation.txt", h_g)
+        plt.close()
 
         plt.figure()
         plt.plot(time_vec,h_R)
@@ -2490,6 +2523,7 @@ class model:
         plt.xlabel(r"$\gamma_3$")
         plt.legend()
         plt.xlim([0,1/3])
+        plt.ylim([0, 0.5])
         plt.savefig(export_folder + '/Dmg_Dist_IMSI_2023.png')
         plt.close()
 
