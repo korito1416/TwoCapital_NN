@@ -19,7 +19,7 @@ module load cuda/11.2
 module load python/anaconda-2021.05
 
 # prefix="/scratch/midway3/pengyu"
-prefix="/project/lhansen/Capital_NN/TwoCapital_NN/output"
+prefix="/project/lhansen/Capital_NN_variant/TwoCapital_NN/output"
 
 
 
@@ -78,25 +78,46 @@ echo "${channel_type}, ${range_type}, ${batch_size}"
 
 num_neurons="32"
 
-# log_xi_min="-3.0"
-# log_xi_max="-2.0"
-# log_xi_baseline_min="-3.0"
-# log_xi_baseline_max="-2.0"
+# log_xi_min="-4.0"
+# log_xi_max="-3.0"
+# log_xi_baseline_min="-4.0"
+# log_xi_baseline_max="-3.0"
+# num_iterations1="2000000"
+# num_iterations2="2000000"
+
+log_xi_min="-2.85"
+log_xi_max="-2.8"
+log_xi_baseline_min="-2.85"
+log_xi_baseline_max="-2.8"
+num_iterations1="2000000"
+num_iterations2="2000000"
+
+# log_xi_min="0"
+# log_xi_max="0.5"
+# log_xi_baseline_min="0"
+# log_xi_baseline_max="0.5"
 # num_iterations1="2000000"
 # num_iterations2="2000000"
 
 
-log_xi_min="-1.0"
-log_xi_max="-0.5"
-log_xi_baseline_min="-1.0"
-log_xi_baseline_max="-0.5"
-num_iterations1="2000000"
-num_iterations2="2000000"
+# log_xi_min="-1.0"
+# log_xi_max="-0.5"
+# log_xi_baseline_min="-1.0"
+# log_xi_baseline_max="-0.5"
+# num_iterations1="2000000"
+# num_iterations2="2000000"
 
-# log_xi_min="1.0"
-# log_xi_max="1.5"
-# log_xi_baseline_min="1.0"
-# log_xi_baseline_max="1.5"
+# log_xi_min="-2.0"
+# log_xi_max="-1.5"
+# log_xi_baseline_min="-2.0"
+# log_xi_baseline_max="-1.5"
+# num_iterations1="2000000"
+# num_iterations2="2000000"
+
+# log_xi_min="-3.0"
+# log_xi_max="-2.5"
+# log_xi_baseline_min="-3.0"
+# log_xi_baseline_max="-2.5"
 # num_iterations1="2000000"
 # num_iterations2="2000000"
 
@@ -111,8 +132,8 @@ num_iterations2="2000000"
 # log_xi_max="10.1"
 # log_xi_baseline_min="10"
 # log_xi_baseline_max="10.1"
-# num_iterations1="3000000"
-# num_iterations2="3000000"
+# num_iterations1="2000000"
+# num_iterations2="2000000"
 
 
 
@@ -134,7 +155,7 @@ A_g_prime_min=0.12
 A_g_prime_max=0.16
 
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Formal_output_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logxibaseline_${log_xi_baseline_min}_num_iterations${num_iterations1}"
+foldername="Four_distortion7_fix_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logxibaseline_${log_xi_baseline_min}_num_iterations${num_iterations1}"
 
 fi
 
@@ -163,7 +184,7 @@ pretrained_post_tech_post_damage_export_folder="None"
 logging_frequency="1000"
 learning_rates="10e-5,10e-5,10e-5,10e-5"
 hidden_layer_activations="swish,tanh,tanh,softplus"
-output_layer_activations="None,custom,custom,softplus"
+output_layer_activations="softplus,custom,custom,softplus"
 num_hidden_layers="4"
 
 

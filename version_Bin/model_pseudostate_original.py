@@ -1097,8 +1097,8 @@ class model:
         
 
         if self.params["n_dims"] == 4:
-            FOC_I   = - self.params["delta"] / inside_log * tf.exp(-i_I_capped) + self.params["psi_0"] * self.params["psi_1"] * \
-            tf.exp(-i_I_capped  * (self.params["psi_1"])) * tf.exp( self.params["psi_1"] * (logK -  log_I_g) )  * dv_dI_g 
+            FOC_I   = (- self.params["delta"] / inside_log * tf.exp(-i_I_capped) + self.params["psi_0"] * self.params["psi_1"] * \
+            tf.exp(-i_I_capped  * (self.params["psi_1"])) * tf.exp( self.params["psi_1"] * (logK -  log_I_g) )  * dv_dI_g ) + 1e-4
 
             return rhs, pv, dv_dY, c, 1 + self.params["phi_g"] * i_g, 1 + self.params["phi_d"] * i_d, i_I, v_diff_j_vals, dv_dI_g, marginal_util_c_over_k, FOC_g, FOC_d, FOC_I, h_d,h_y
         else:
@@ -2209,7 +2209,7 @@ class model:
         data_dict['log_K_simulation'] = [state.numpy()[0,0] for state in state_list]
         data_dict['R_simulation'] = [state.numpy()[0,1] for state in state_list]
         data_dict['T_simulation'] = [state.numpy()[0,2] for state in state_list]
-        data_dict['log_I_g_simulation'] = [state.numpy()[0,4] for state in state_list]
+        data_dict['log_I_g_simulation'] = [state.numpy()[0,3] for state in state_list]
 
         data_dict['i_g_simulation'] = [i_g.numpy()[0,0] for i_g in i_g_list]
         data_dict['i_d_simulation'] = [i_d.numpy()[0,0] for i_d in i_d_list]
@@ -2277,8 +2277,8 @@ class model:
 
         data_dict['g_j_avg'] = data_dict['g_j_avg'] / self.params["A_g_prime_length"]
 
-        data_dict['distorted_tech_jump_intensity'] = data_dict['g_j_avg']* I_g / varrho
-        data_dict['distorted_tech_jump_prob'] = 1-np.exp(-np.cumsum(data_dict['distorted_tech_jump_intensity'] * (dt)))
+        data_dict['distorted_tech_jump_intensity'] = data_dict['g_j_avg']* I_g * (dt) / varrho
+        data_dict['distorted_tech_jump_prob'] = 1-np.exp(-np.cumsum(data_dict['distorted_tech_jump_intensity']))
 
         data_dict['h_y_simulation'] = h_y
         data_dict['h_y_simulation'] = np.array(data_dict['h_y_simulation'])
@@ -2332,7 +2332,7 @@ class model:
         plt.xlabel("Years")
         plt.title(r'$\log I_g$')
         plt.savefig(export_folder + "/log_I_g_simulation.png")
-        np.savetxt(export_folder +  "/log_I_g_simulation.txt", np.array([state.numpy()[0,4] for state in state_list]))
+        np.savetxt(export_folder +  "/log_I_g_simulation.txt", np.array([state.numpy()[0,3] for state in state_list]))
         plt.close()
 
 

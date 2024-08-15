@@ -158,54 +158,45 @@ params['r_1']   = 1.5
 params['r_2']   = 2.5
 params['y_lower_bar']  = 1.5
 
-##########
-test_model = model.model(params)
-test_model.export_parameters()
-test_model.train()
-# test_model.analyze()
+
+
+# Define the paths to the weights files
+v_nn_checkpoint_path = params["export_folder"]+'/v_nn_checkpoint_pre_tech_pre_damage'
+i_g_nn_checkpoint_path = params["export_folder"]+'/i_g_nn_checkpoint_pre_tech_pre_damage'
+i_d_nn_checkpoint_path = params["export_folder"]+'/i_d_nn_checkpoint_pre_tech_pre_damage'
+i_I_nn_checkpoint_path = params["export_folder"]+'/i_I_nn_checkpoint_pre_tech_pre_damage'
+
+
+
+
+def load_model(params, v_nn_checkpoint_path, i_g_nn_checkpoint_path, i_d_nn_checkpoint_path, i_I_nn_checkpoint_path=None):
+    test_model = model.model(params)
+    
+    n_inputs = 7 # if "post_tech_post_damage" in params["model_type"] else 8
+    test_model.v_nn.build((params["batch_size"], n_inputs))
+    test_model.i_g_nn.build((params["batch_size"], n_inputs))
+    test_model.i_d_nn.build((params["batch_size"], n_inputs))
+    if "pre_tech" in params["model_type"]:
+        test_model.i_I_nn.build((params["batch_size"], n_inputs))
+    
+    test_model.v_nn.load_weights(v_nn_checkpoint_path)
+    test_model.i_g_nn.load_weights(i_g_nn_checkpoint_path)
+    test_model.i_d_nn.load_weights(i_d_nn_checkpoint_path)
+    if i_I_nn_checkpoint_path:
+        test_model.i_I_nn.load_weights(i_I_nn_checkpoint_path)
+
+    return test_model
+
+
+reloaded_model = load_model(params, v_nn_checkpoint_path, i_g_nn_checkpoint_path, i_d_nn_checkpoint_path, i_I_nn_checkpoint_path)
+
 
 if channel_type == "baseline":
     for log_xi_baseline_idx in range(len(log_xi_baseline_list)):
     # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-        test_model.simulate_path(60, 1.0 / 12.0, log_xi_min, log_xi_baseline_list[log_xi_baseline_idx], export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_baseline_idx))
+        reloaded_model.simulate_path(100, 1.0 / 12.0, log_xi_min, log_xi_baseline_list[log_xi_baseline_idx], export_folder + "/final_output/pre_tech_pre_damage_shy/log_xi_idx_" + str(log_xi_baseline_idx))
 else:
     for log_xi_idx in range(len(log_xi_list)):
         # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-        test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], log_xi_baseline_min, export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_idx))
-
-
-# for log_xi_idx in range(len(log_xi_list)):
-#     # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-#     test_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], 10.25, export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_idx))
-
-# if not (pathlib.Path(params["export_folder"]+ "/v_nn_checkpoint_pre_damage_pre_tech"+"_Ag_{}".format(A_g_prime_num)+".index").is_file()):
-#     ## Model has not yet been trained
-#     print("Pre-tech pre-jump model has not yet been trained. Trainning now... ")
-#     test_model = model.model(params)
-#     test_model.export_parameters()
-#     test_model.train()
-#     test_model.analyze()
-
-#     log_xi_list                  = [float(np.log(xi)) for xi in np.linspace(np.exp(log_xi_min) + 0.02, np.exp(log_xi_max) - 0.02, 10)]
-
-
-#     for log_xi_idx in range(len(log_xi_list)):
-#         # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-#         test_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder_output + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-
-
-# else:
-#     print("Pre-tech pre-jump model has been trained. ")
-#     test_model = model.model(params)
-#     test_model.export_parameters()
-#     test_model.train()
-#     test_model.analyze()
-#     log_xi_list                  = [float(np.log(xi)) for xi in np.linspace(np.exp(log_xi_min) + 0.02, np.exp(log_xi_max) - 0.02, 10)]
-
-
-#     for log_xi_idx in range(len(log_xi_list)):
-#         # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-#         test_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder_output + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-
-
+        reloaded_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], log_xi_baseline_min, export_folder + "/final_output/pre_tech_pre_damage_shy/log_xi_idx_" + str(log_xi_idx))
 
