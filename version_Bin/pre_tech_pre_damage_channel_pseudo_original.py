@@ -167,11 +167,11 @@ test_model.train()
 if channel_type == "baseline":
     for log_xi_baseline_idx in range(len(log_xi_baseline_list)):
     # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-        test_model.simulate_path(100, 1.0 / 12.0, log_xi_min, log_xi_baseline_list[log_xi_baseline_idx], export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_baseline_idx))
+        test_model.simulate_path(60, 1.0 / 12.0, log_xi_min, log_xi_baseline_list[log_xi_baseline_idx], export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_baseline_idx))
 else:
     for log_xi_idx in range(len(log_xi_list)):
         # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))
-        test_model.simulate_path(100, 1.0 / 12.0, log_xi_list[log_xi_idx], log_xi_baseline_min, export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_idx))
+        test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], log_xi_baseline_min, export_folder + "/final_output/pre_tech_pre_damage/log_xi_idx_" + str(log_xi_idx))
 
 
 # for log_xi_idx in range(len(log_xi_list)):
