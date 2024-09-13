@@ -1,14 +1,14 @@
 #!/bin/sh
 
 
-
-
 #SBATCH --time=0-36:00:00
-#SBATCH --account=pi-lhansen
-#SBATCH --partition=caslake
-#SBATCH --nodes=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=21G
+#SBATCH --account=ssd
+#SBATCH --partition=ssd-gpu
+#SBATCH --qos=ssd
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --mem-per-cpu=32G  # NOTE DO NOT USE THE --mem= OPTION
+
 
 # Load the default version of GNU parallel.
 module load parallel
@@ -76,7 +76,7 @@ echo "${channel_type}, ${range_type}, ${batch_size}"
 # batch_size="512"
 # batch_size="1024"
 
-num_neurons="32"
+num_neurons="128"
 
 # log_xi_min="-3.0"
 # log_xi_max="-2.0"
@@ -86,17 +86,17 @@ num_neurons="32"
 # num_iterations2="2000000"
 
 
-log_xi_min="-1.0"
-log_xi_max="-0.5"
-log_xi_baseline_min="-1.0"
-log_xi_baseline_max="-0.5"
+log_xi_min="-3.0"
+log_xi_max="5.0"
+log_xi_baseline_min="-3.0"
+log_xi_baseline_max="5.0"
 num_iterations1="2000000"
 num_iterations2="2000000"
 
-# log_xi_min="1.0"
-# log_xi_max="1.5"
-# log_xi_baseline_min="1.0"
-# log_xi_baseline_max="1.5"
+# log_xi_min="-2.96"
+# log_xi_max="-2.9"
+# log_xi_baseline_min="-2.96"
+# log_xi_baseline_max="-2.9"
 # num_iterations1="2000000"
 # num_iterations2="2000000"
 
@@ -111,8 +111,8 @@ num_iterations2="2000000"
 # log_xi_max="10.1"
 # log_xi_baseline_min="10"
 # log_xi_baseline_max="10.1"
-# num_iterations1="3000000"
-# num_iterations2="3000000"
+# num_iterations1="2000000"
+# num_iterations2="2000000"
 
 
 
@@ -130,11 +130,11 @@ echo "range_type=${range_type}"
 
 # A_g_prime_min=0.19
 # A_g_prime_max=0.22
-A_g_prime_min=0.12
-A_g_prime_max=0.16
+A_g_prime_min=0.10
+A_g_prime_max=0.13
 
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Formal_output_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logxibaseline_${log_xi_baseline_min}_num_iterations${num_iterations1}"
+foldername="Test_delta_gpu_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logximax_${log_xi_max}_logxibaseline_${log_xi_baseline_min}_num_iterations${num_iterations1}"
 
 fi
 
@@ -163,7 +163,7 @@ pretrained_post_tech_post_damage_export_folder="None"
 logging_frequency="1000"
 learning_rates="10e-5,10e-5,10e-5,10e-5"
 hidden_layer_activations="swish,tanh,tanh,softplus"
-output_layer_activations="None,custom,custom,softplus"
+output_layer_activations="softplus,custom,custom,softplus"
 num_hidden_layers="4"
 
 
@@ -171,10 +171,10 @@ num_hidden_layers="4"
 
 
 learning_rate_schedule_type="None"
-delta="0.025"
+delta="0.01"
 tensorboard='True'
 A_g_prime_length=10
-gamma_3_length=5
+gamma_3_length=10
 
 
 
