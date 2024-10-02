@@ -88,45 +88,45 @@ class model:
 
         print("Tensorboard boolean =", self.params['tensorboard'] )
 
-        if params["load_solution"] is not None:
-            ## Parse model solution from a file
+        # if params["load_solution"] is not None:
+        #     ## Parse model solution from a file
             
-            self.solution_fd              = json.load(open(params["load_solution"]))
+        #     self.solution_fd              = json.load(open(params["load_solution"]))
 
-            self.solution_fd['stateSpace'] = np.array(self.solution_fd['grid_tuple'], ndmin=2).transpose()
-            self.solution_fd['nK']         = len( np.unique(self.solution_fd['grid_tuple'][0]))
-            self.solution_fd['nR']         = len(np.unique(self.solution_fd['grid_tuple'][1]))
-            self.solution_fd['nT']         = len(np.unique(self.solution_fd['grid_tuple'][2]))
+        #     self.solution_fd['stateSpace'] = np.array(self.solution_fd['grid_tuple'], ndmin=2).transpose()
+        #     self.solution_fd['nK']         = len( np.unique(self.solution_fd['grid_tuple'][0]))
+        #     self.solution_fd['nR']         = len(np.unique(self.solution_fd['grid_tuple'][1]))
+        #     self.solution_fd['nT']         = len(np.unique(self.solution_fd['grid_tuple'][2]))
 
-            self.solution_fd['V']          = np.array(self.solution_fd['V'])
-            self.solution_fd['i_G']        = np.array(self.solution_fd['i_G'])
-            self.solution_fd['i_B']        = np.array(self.solution_fd['i_B'])
+        #     self.solution_fd['V']          = np.array(self.solution_fd['V'])
+        #     self.solution_fd['i_G']        = np.array(self.solution_fd['i_G'])
+        #     self.solution_fd['i_B']        = np.array(self.solution_fd['i_B'])
 
-            self.params["A_d"]            = self.solution_fd["A_B"]
+        #     self.params["A_d"]            = self.solution_fd["A_B"]
 
-            self.params["alpha_d"]        = -self.solution_fd["delta_i"]
-            self.params["alpha_g"]        = -self.solution_fd["delta_i"]
-            self.params["sigma_d"]        = self.solution_fd["sigma_K"]
-            self.params["sigma_g"]        = self.solution_fd["sigma_K"]
-            self.params["varsigma"]       = self.solution_fd["sigma_T"]
-            self.params["phi_d"]          = self.solution_fd["theta"]
-            self.params["phi_g"]          = self.solution_fd["theta"]
-            self.params["gamma_1"]        = self.solution_fd["gamma_1"]
-            self.params["gamma_2"]        = self.solution_fd["gamma_2"]
+        #     self.params["alpha_d"]        = -self.solution_fd["delta_i"]
+        #     self.params["alpha_g"]        = -self.solution_fd["delta_i"]
+        #     self.params["sigma_d"]        = self.solution_fd["sigma_K"]
+        #     self.params["sigma_g"]        = self.solution_fd["sigma_K"]
+        #     self.params["varsigma"]       = self.solution_fd["sigma_T"]
+        #     self.params["phi_d"]          = self.solution_fd["theta"]
+        #     self.params["phi_g"]          = self.solution_fd["theta"]
+        #     self.params["gamma_1"]        = self.solution_fd["gamma_1"]
+        #     self.params["gamma_2"]        = self.solution_fd["gamma_2"]
 
-            self.params["eta"]            = self.solution_fd["lambda"]
-            self.params["beta_f"]         = self.solution_fd["beta"]
+        #     self.params["eta"]            = self.solution_fd["lambda"]
+        #     self.params["beta_f"]         = self.solution_fd["beta"]
 
-            self.params["logK_min"]       = self.solution_fd["K_min"]
-            self.params["logK_max"]       = self.solution_fd["K_max"]
-            self.params["R_min"]          = self.solution_fd["R_min"]
-            self.params["R_max"]          = self.solution_fd["R_max"]
-            self.params["Y_min"]          = self.solution_fd["T_min"]
-            self.params["Y_max"]          = self.solution_fd["T_max"]
+        #     self.params["logK_min"]       = self.solution_fd["K_min"]
+        #     self.params["logK_max"]       = self.solution_fd["K_max"]
+        #     self.params["R_min"]          = self.solution_fd["R_min"]
+        #     self.params["R_max"]          = self.solution_fd["R_max"]
+        #     self.params["Y_min"]          = self.solution_fd["T_min"]
+        #     self.params["Y_max"]          = self.solution_fd["T_max"]
 
-            self.params["gamma_3"]        = self.solution_fd["gamma_3"] ### Need to fix this; shouldn't be hard-coded
-            # self.params["A_g"]        = self.solution_fd["A_B"] ### A_g assigned in python script
-            self.params["log_xi"]         = np.log(self.solution_fd["xi"])
+        #     self.params["gamma_3"]        = self.solution_fd["gamma_3"] ### Need to fix this; shouldn't be hard-coded
+        #     # self.params["A_g"]        = self.solution_fd["A_B"] ### A_g assigned in python script
+        #     self.params["log_xi"]         = np.log(self.solution_fd["xi"])
 
         self.params["A_g_prime_list"]     = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"]).tolist()
         self.params["gamma_3_list"]       = np.linspace(self.params["gamma_3_min"], self.params["gamma_3_max"], self.params["gamma_3_length"]).tolist()
@@ -213,7 +213,8 @@ class model:
             self.params["state_intervals"]["gamma_3_interval_size"] =  self.params["state_intervals"]["gamma_3"][1] -  self.params["state_intervals"]["gamma_3"][0]
 
         if "post_tech" in self.params["model_type"]:
-            self.params["state_intervals"]["A_g_prime"] = tf.reshape(tf.linspace(self.params['A_g_prime_min'], self.params['A_g_prime_max'], self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
+            # self.params["state_intervals"]["A_g_prime"] = tf.reshape(tf.linspace(self.params['A_g_prime_min'], self.params['A_g_prime_max'], self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
+            self.params["state_intervals"]["A_g_prime"] = tf.reshape(tf.linspace(0.10, 0.16, self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
             self.params["state_intervals"]["A_g_prime_interval_size"] =  self.params["state_intervals"]["A_g_prime"][1] -  self.params["state_intervals"]["A_g_prime"][0]
  
 

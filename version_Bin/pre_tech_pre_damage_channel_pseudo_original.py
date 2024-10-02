@@ -92,7 +92,7 @@ i_I_nn_config["final_activation"] = output_layer_activations[3]
 ## Create params struct 
 params = {"batch_size" : batch_size, "R_min" : 0.01, \
 "R_max" : 0.99, "logK_min" : 4.0,\
-"logK_max" : 7.0, "Y_min" : 10e-3, "Y_max" : 3.0, \
+"logK_max" : 7.0, "Y_min" : 10e-3, "Y_max" : 4.0, \
 "log_I_g_max" : 6.0, "log_I_g_min": 1.0, \
 "sigma_d" : 0.15 , "sigma_g" : 0.15, "A_d" : 0.12, "A_g_prime_min" : A_g_prime_min, "A_g_prime_max" : A_g_prime_max, "A_g_prime_length" : A_g_prime_length, \
 "gamma_1" : 0.00017675, "gamma_2" : 2 * 0.0022, "gamma_3_idx" : 0,  "gamma_3_min" : 0.0, "gamma_3_max" : 1.0/3.0, "gamma_3_length" : gamma_3_length,  \

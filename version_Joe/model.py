@@ -1382,7 +1382,7 @@ class model:
 
         I_g        =  np.exp(np.array( [state.numpy()[0,4] for state in state_list] ))
         g          = [g.numpy()[0,0] for g in g_list]
-        integrand  =  I_g * g * dt 
+        integrand  =  I_g * g * dt / varrho 
         integral   = -np.cumsum(integrand)
         distorted_probability = 1.0 - np.exp(integral)
 
@@ -1416,9 +1416,10 @@ class model:
         distorted = np.array([ data_dict['f_m_0_simulation_norm'][-1], data_dict['f_m_1_simulation_norm'][-1],
                             data_dict['f_m_2_simulation_norm'][-1], data_dict['f_m_3_simulation_norm'][-1], data_dict['f_m_4_simulation_norm'][-1]])
         print("Climate Models: {}"  .format(distorted))
+        bin_edges = np.linspace(0, 1/3, 6)
         x1       = np.linspace(0,1/3,5)
-        plt.hist(x1, weights=baseline, label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey")
-        plt.hist(x1, weights=distorted, label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey")
+        plt.hist(x1, weights=baseline, bins=bin_edges, label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey")
+        plt.hist(x1, weights=distorted, bins=bin_edges, label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey")
         plt.title("Distorted Probability of Damage Models")
         plt.xlabel(r"$\gamma_3$")
         plt.legend()
