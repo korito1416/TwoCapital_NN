@@ -1221,7 +1221,7 @@ class model:
 
 
 
-        varrho = 448
+        varrho = 1120
         # gamma_3_length = 5
         A_d = 0.12
         A_g = 0.10
@@ -1599,8 +1599,8 @@ params = {"batch_size" : 32, "R_min" : 0.01, \
 "sigma_d" : 0.15 , "sigma_g" : 0.15, "A_d" : 0.12, "A_g_prime" : 0.15, \
 "gamma_1" : 0.00017675, "gamma_2" : 2 * 0.0022, "gamma_3" : 0.15 , \
 "y_bar" : 2.0, "beta_f" : 1.86 / 1000, "eta" : 0.17, \
-"varsigma" : 1.2 * 1.86 / 1000, "phi_d" : 100.0,  "phi_g" : 100.0, "Gamma" : 0.025,  \
-"alpha_d" : -0.0236, "alpha_g" : -0.0236, "delta" : 0.025, \
+"varsigma" : 1.2 * 1.86 / 1000, "phi_d" : 100.0,  "phi_g" : 100.0, "Gamma" : 0.06,  \
+"alpha_d" : -0.035, "alpha_g" : -0.035, "delta" : 0.06, \
 "v_nn_config" : v_nn_config, "i_g_nn_config" : i_g_nn_config, "i_d_nn_config" : i_d_nn_config, \
 "i_I_nn_config" : i_I_nn_config, "n_dims" : 4, "model_type" : "post_damage_pre_tech", \
 "num_iterations" : 100, "logging_frequency": 10, "verbose": True, "load_parameters" : None  }
@@ -1641,8 +1641,8 @@ params = {"batch_size" : 32, "R_min" : 0.01, \
 "sigma_d" : 0.15 , "sigma_g" : 0.15, "A_d" : 0.12, "A_g_prime" : 0.15, \
 "gamma_1" : 0.00017675, "gamma_2" : 2 * 0.0022, "gamma_3" : 0.15 , \
 "y_bar" : 2.0, "beta_f" : 1.86 / 1000, "eta" : 0.17, \
-"varsigma" : 1.2 * 1.86 / 1000, "phi_d" : 100.0,  "phi_g" : 100.0, "Gamma" : 0.025,  \
-"alpha_d" : -0.0236, "alpha_g" : -0.0236, "delta" : 0.025, \
+"varsigma" : 1.2 * 1.86 / 1000, "phi_d" : 100.0,  "phi_g" : 100.0, "Gamma" : 0.06,  \
+"alpha_d" : -0.035, "alpha_g" : -0.035, "delta" : 0.06, \
 "v_nn_config" : v_nn_config, "i_g_nn_config" : i_g_nn_config, "i_d_nn_config" : i_d_nn_config, \
 "n_dims" : 3, "model_type" : "post_damage_post_tech" , \
 "num_iterations" : 10000, "logging_frequency": 1000, "verbose": True, "load_parameters" : None  }

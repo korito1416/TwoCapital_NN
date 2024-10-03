@@ -648,8 +648,9 @@ class model:
 
         beta_f   = (self.params["beta_f"] + self.params["varsigma"] * h_y)    ## beta_f must be adjusted
 
-        y_test = self.params["varsigma"] * h_y * (self.params["eta"] *  self.params["A_d"] * (1-R) * K)
+        # y_test = self.params["varsigma"] * h_y * (self.params["eta"] *  self.params["A_d"] * (1-R) * K)
 
+        
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
 
             # h_k = - 1.0 / xi * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"] + (dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"] )
@@ -678,7 +679,7 @@ class model:
 
 
 
-
+        y_test = h_g
 
 
         #################
@@ -733,19 +734,19 @@ class model:
         # Add h distortion contribution to drift
 
 
-        # if self.params["n_dims"] == 4:
+        if self.params["n_dims"] == 4:
 
-        #     rhs = rhs + self.params["sigma_I"] * h_R * dv_dI_g
+            rhs = rhs + self.params["sigma_I"] * h_R * dv_dI_g
 
 
-        # if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
+        if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
             
-        #     rhs = rhs + (- 1.0 / xi ) * ((dv_dlogK - R * dv_dR )**2) * ((1-R)**2) * (self.params["sigma_d"]**2)
+            # rhs = rhs + (- 1.0 / xi ) * ((dv_dlogK - R * dv_dR )**2) * ((1-R)**2) * (self.params["sigma_d"]**2)
 
-        #     rhs = rhs + (- 1.0 / xi ) * ((dv_dlogK + (1-R) * dv_dR )**2) * (R**2) * (self.params["sigma_g"]**2)
+            # rhs = rhs + (- 1.0 / xi ) * ((dv_dlogK + (1-R) * dv_dR )**2) * (R**2) * (self.params["sigma_g"]**2)
 
-            # rhs = rhs + h_d * ((dv_dlogK - R * dv_dR)*(1-R)*self.params["sigma_d"])
-            # rhs = rhs + h_g *((dv_dlogK + (1-R) * dv_dR)*R*self.params["sigma_g"])
+            rhs = rhs + h_d * ((dv_dlogK - R * dv_dR)*(1-R)*self.params["sigma_d"])
+            rhs = rhs + h_g *((dv_dlogK + (1-R) * dv_dR)*R*self.params["sigma_g"])
 
         ## Add quadratic h distortion contribution: capital, climate, technology
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="climate": 
@@ -758,29 +759,29 @@ class model:
             rhs = rhs + xi_baseline  * tf.pow(h_y,2) / 2  
 
 
-        # if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
+        if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
 
-        #     rhs = rhs + xi  * tf.pow(h_d,2) / 2  
+            rhs = rhs + xi  * tf.pow(h_d,2) / 2  
 
-        #     rhs = rhs + xi  * tf.pow(h_g,2) / 2  
-
-
-        # else: 
-
-        #     rhs = rhs + xi_baseline  * tf.pow(h_d,2) / 2  
-
-        #     rhs = rhs + xi_baseline  * tf.pow(h_g,2) / 2  
+            rhs = rhs + xi  * tf.pow(h_g,2) / 2  
 
 
-        # if self.params["n_dims"] == 4:
+        else: 
+
+            rhs = rhs + xi_baseline  * tf.pow(h_d,2) / 2  
+
+            rhs = rhs + xi_baseline  * tf.pow(h_g,2) / 2  
 
 
-        #     if self.params["channel_type"]=="full" or self.params["channel_type"]=="technology": 
+        if self.params["n_dims"] == 4:
 
-        #         rhs = rhs + xi  * tf.pow(h_R,2) / 2
-        #     else: 
 
-        #         rhs = rhs + xi_baseline  * tf.pow(h_R,2) / 2
+            if self.params["channel_type"]=="full" or self.params["channel_type"]=="technology": 
+
+                rhs = rhs + xi  * tf.pow(h_R,2) / 2
+            else: 
+
+                rhs = rhs + xi_baseline  * tf.pow(h_R,2) / 2
 
 
 
@@ -2203,7 +2204,7 @@ class model:
 
 
 
-        varrho = 448
+        varrho = 1120
         # gamma_3_length = 5
         A_d = 0.12
         A_g = 0.10
@@ -3087,7 +3088,7 @@ class model:
 
 
 
-        varrho = 448
+        varrho = 1120
         # gamma_3_length = 5
         A_d = 0.12
         A_g = 0.10

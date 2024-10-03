@@ -2,13 +2,11 @@
 
 
 #SBATCH --time=0-36:00:00
-#SBATCH --account=ssd
-#SBATCH --partition=ssd-gpu
-#SBATCH --qos=ssd
-#SBATCH --gres=gpu:1
-#SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=32G  # NOTE DO NOT USE THE --mem= OPTION
-
+#SBATCH --account=pi-lhansen
+#SBATCH --partition=caslake
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=21G
 
 # Load the default version of GNU parallel.
 module load parallel
@@ -19,7 +17,7 @@ module load cuda/11.2
 module load python/anaconda-2021.05
 
 # prefix="/scratch/midway3/pengyu"
-prefix="/project/lhansen/Capital_NN/TwoCapital_NN/output"
+prefix="/project/lhansen/Cap_test/TwoCapital_NN/output"
 
 
 
@@ -76,7 +74,7 @@ echo "${channel_type}, ${range_type}, ${batch_size}"
 # batch_size="512"
 # batch_size="1024"
 
-num_neurons="128"
+num_neurons="64"
 
 # log_xi_min="-3.0"
 # log_xi_max="-2.0"
@@ -130,11 +128,11 @@ echo "range_type=${range_type}"
 
 # A_g_prime_min=0.19
 # A_g_prime_max=0.22
-A_g_prime_min=0.10
+A_g_prime_min=0.12
 A_g_prime_max=0.13
 
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Test_delta_gpu_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logximax_${log_xi_max}_logxibaseline_${log_xi_baseline_min}_num_iterations${num_iterations1}"
+foldername="Test_distortion_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logximax_${log_xi_max}_logxibaseline_${log_xi_baseline_min}_num_iterations${num_iterations1}"
 
 fi
 
@@ -171,10 +169,10 @@ num_hidden_layers="4"
 
 
 learning_rate_schedule_type="None"
-delta="0.01"
+delta="0.025"
 tensorboard='True'
-A_g_prime_length=10
-gamma_3_length=10
+A_g_prime_length=3
+gamma_3_length=20
 
 
 

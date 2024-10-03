@@ -33,7 +33,7 @@ output_layer_activations="None,custom,custom,softplus"
 num_hidden_layers="4"
 num_neurons="32"
 learning_rate_schedule_type="None"
-delta="0.025"
+delta="0.06"
 
 tensorboard='True'
 
