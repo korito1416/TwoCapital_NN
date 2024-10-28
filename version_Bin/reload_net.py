@@ -93,15 +93,16 @@ i_I_nn_config = {"num_hiddens" : [num_neurons for _ in range(num_hidden_layers)]
 i_I_nn_config["final_activation"] = output_layer_activations[3]
 
 ## Create params struct 
+## Create params struct 
 params = {"batch_size" : batch_size, "R_min" : 0.01, \
 "R_max" : 0.99, "logK_min" : 4.0,\
-"logK_max" : 7.0, "Y_min" : 10e-3, "Y_max" : 3.0, \
+"logK_max" : 7.0, "Y_min" : 10e-3, "Y_max" : 4.0, \
 "log_I_g_max" : 6.0, "log_I_g_min": 1.0, \
-"sigma_d" : 0.15 , "sigma_g" : 0.15, "A_d" : 0.12, "A_g_prime_min" : A_g_prime_min, "A_g_prime_max" : A_g_prime_max, "A_g_prime_length" : A_g_prime_length, \
+"sigma_d" : 0.016 , "sigma_g" : 0.016, "A_d" : 0.12, "A_g_prime_min" : A_g_prime_min, "A_g_prime_max" : A_g_prime_max, "A_g_prime_length" : A_g_prime_length, \
 "gamma_1" : 0.00017675, "gamma_2" : 2 * 0.0022, "gamma_3_idx" : 0,  "gamma_3_min" : 0.0, "gamma_3_max" : 1.0/3.0, "gamma_3_length" : gamma_3_length,  \
 "y_bar" : 2.0, "beta_f" : 1.86 / 1000, "eta" : 0.17, \
-"varsigma" : 1.2 * 1.86 / 1000, "phi_d" : 100.0,  "phi_g" : 100.0, "Gamma" : 0.025,  \
-"alpha_d" : -0.0236, "alpha_g" : -0.0236, "delta" : delta, \
+"varsigma" : 1.2 * 1.86 / 1000, "phi_d" : 16.7,  "phi_g" : 16.7, "Gamma" : 0.06,  \
+"alpha_d" : -0.035, "alpha_g" : -0.035, "delta" : delta, \
 "v_nn_config" : v_nn_config, "i_g_nn_config" : i_g_nn_config, "i_d_nn_config" : i_d_nn_config, \
 "model_type" : "pre_tech_pre_damage" , \
 "num_iterations" : num_iterations, "logging_frequency": logging_frequency, "verbose": True, "load_parameters" : None,
@@ -121,14 +122,26 @@ if output_layer_activations[1] == "custom" or output_layer_activations[2] == "cu
 
 params["n_dims"]          = 4
 params["zeta"]            = 0.0
-params["sigma_I"]         = 0.016
-params["varrho"]          = 448
+params["sigma_I"]         = 0.0078
+params["varrho"]          = 1120
 params["log_I_g_min"]     = 1.0
 params["log_I_g_max"]     = 6.0
 params["A_g"]             = 0.10
 params["psi_1"]           = 0.5
 params["psi_0"]           = 0.10583
 
+
+params["load_solution"]  = "model_results.json"
+
+if output_layer_activations[1] == "custom" or output_layer_activations[2] == "custom":
+    params["i_g_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0/ params["phi_g"]) / (tf.exp(2 * x) + 1.0)
+    params["i_d_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0/ params["phi_d"]) / (tf.exp(2 * x) + 1.0)
+
+
+
+## This model has four state variables. 
+## Add in paramters associated with this 4d model 
+ 
 
 if params["learning_rate_schedule_type"] == "None":
     lr_schedulers = learning_rates

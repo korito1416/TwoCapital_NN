@@ -88,46 +88,7 @@ class model:
 
         print("Tensorboard boolean =", self.params['tensorboard'] )
 
-        # if params["load_solution"] is not None:
-        #     ## Parse model solution from a file
-            
-        #     self.solution_fd              = json.load(open(params["load_solution"]))
-
-        #     self.solution_fd['stateSpace'] = np.array(self.solution_fd['grid_tuple'], ndmin=2).transpose()
-        #     self.solution_fd['nK']         = len( np.unique(self.solution_fd['grid_tuple'][0]))
-        #     self.solution_fd['nR']         = len(np.unique(self.solution_fd['grid_tuple'][1]))
-        #     self.solution_fd['nT']         = len(np.unique(self.solution_fd['grid_tuple'][2]))
-
-        #     self.solution_fd['V']          = np.array(self.solution_fd['V'])
-        #     self.solution_fd['i_G']        = np.array(self.solution_fd['i_G'])
-        #     self.solution_fd['i_B']        = np.array(self.solution_fd['i_B'])
-
-        #     self.params["A_d"]            = self.solution_fd["A_B"]
-
-        #     self.params["alpha_d"]        = -self.solution_fd["delta_i"]
-        #     self.params["alpha_g"]        = -self.solution_fd["delta_i"]
-        #     self.params["sigma_d"]        = self.solution_fd["sigma_K"]
-        #     self.params["sigma_g"]        = self.solution_fd["sigma_K"]
-        #     self.params["varsigma"]       = self.solution_fd["sigma_T"]
-        #     self.params["phi_d"]          = self.solution_fd["theta"]
-        #     self.params["phi_g"]          = self.solution_fd["theta"]
-        #     self.params["gamma_1"]        = self.solution_fd["gamma_1"]
-        #     self.params["gamma_2"]        = self.solution_fd["gamma_2"]
-
-        #     self.params["eta"]            = self.solution_fd["lambda"]
-        #     self.params["beta_f"]         = self.solution_fd["beta"]
-
-        #     self.params["logK_min"]       = self.solution_fd["K_min"]
-        #     self.params["logK_max"]       = self.solution_fd["K_max"]
-        #     self.params["R_min"]          = self.solution_fd["R_min"]
-        #     self.params["R_max"]          = self.solution_fd["R_max"]
-        #     self.params["Y_min"]          = self.solution_fd["T_min"]
-        #     self.params["Y_max"]          = self.solution_fd["T_max"]
-
-        #     self.params["gamma_3"]        = self.solution_fd["gamma_3"] ### Need to fix this; shouldn't be hard-coded
-        #     # self.params["A_g"]        = self.solution_fd["A_B"] ### A_g assigned in python script
-        #     self.params["log_xi"]         = np.log(self.solution_fd["xi"])
-
+ 
         self.params["A_g_prime_list"]     = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"]).tolist()
         self.params["gamma_3_list"]       = np.linspace(self.params["gamma_3_min"], self.params["gamma_3_max"], self.params["gamma_3_length"]).tolist()
 
@@ -226,6 +187,15 @@ class model:
 
         self.params["state_intervals"]["Y"]        =  tf.reshape(tf.linspace(self.params['Y_min'], self.params['Y_max'], self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
         self.params["state_intervals"]["Y_interval_size"] =  self.params["state_intervals"]["Y"][1] -  self.params["state_intervals"]["Y"][0]
+        
+        '''
+        if "post_damage" in self.params["model_type"]:
+            self.params["state_intervals"]["Y"]        =  tf.reshape(tf.linspace(self.params['Y_min'], self.params['Y_max'], self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
+            self.params["state_intervals"]["Y_interval_size"] =  self.params["state_intervals"]["Y"][1] -  self.params["state_intervals"]["Y"][0]
+        else:
+            self.params["state_intervals"]["Y"]        =  tf.reshape(tf.linspace(self.params['Y_min'], self.params['y_bar']+1, self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
+            self.params["state_intervals"]["Y_interval_size"] =  self.params["state_intervals"]["Y"][1] -  self.params["state_intervals"]["Y"][0]
+        '''
 
         if self.params["n_dims"] == 4:
             self.params["state_intervals"]["log_I_g"]        =  tf.reshape(tf.linspace(self.params['log_I_g_min'], self.params['log_I_g_max'], self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
@@ -239,7 +209,7 @@ class model:
         self.train_writer = tf.summary.create_file_writer( self.params["export_folder"] + '/logs/train/')
         self.test_writer  = tf.summary.create_file_writer( self.params["export_folder"] + '/logs/test/')
 
- 
+
     def sample(self):
 
         ## Sample xi 
@@ -483,7 +453,7 @@ class model:
 
                 if self.params["channel_type"]=="full":
 
-                    X_pre_tech_post_damage = tf.concat([logK, R, Y, log_I_g, 
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
                     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi, log_xi, log_xi], 1)
                     v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
                     v_m_vals.append( v_m )
@@ -497,7 +467,7 @@ class model:
                 elif self.params["channel_type"]=="capital":
 
 
-                    X_pre_tech_post_damage = tf.concat([logK, R, Y, log_I_g, 
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
                     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi, log_xi_baseline, log_xi_baseline], 1)
                     v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
                     v_m_vals.append( v_m )
@@ -511,7 +481,7 @@ class model:
                 elif self.params["channel_type"]=="climate":
 
 
-                    X_pre_tech_post_damage = tf.concat([logK, R, Y, log_I_g, 
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
                     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi, log_xi_baseline], 1)
                     v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
                     v_m_vals.append( v_m )
@@ -526,7 +496,7 @@ class model:
                 elif self.params["channel_type"]=="damage":
 
                 
-                    X_pre_tech_post_damage = tf.concat([logK, R, Y, log_I_g,
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g,
                     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi], 1)
                     v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
                     v_m_vals.append( v_m )
@@ -540,7 +510,7 @@ class model:
                 elif self.params["channel_type"]=="technology":
 
                 
-                    X_pre_tech_post_damage = tf.concat([logK, R, Y, log_I_g, 
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
                     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi], 1)
                     v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
                     v_m_vals.append( v_m )
@@ -554,7 +524,7 @@ class model:
                 else:
 
             
-                    X_pre_tech_post_damage = tf.concat([logK, R, Y, log_I_g, 
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
                     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi_baseline], 1)
                     v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
                     v_m_vals.append( v_m )
@@ -1350,8 +1320,8 @@ class model:
                     log_I_g = None
 
                 ## Compute test loss
-                test_losses = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, training=False)
-
+                train_loss = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, training=True)
+                test_losses = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, training=False) 
                 ## Update normalization constants
                 if self.params["n_dims"] == 4:
                     rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, i_I, v_diff, dv_dI_g, marginal_utility_of_consumption_norm, FOC_g, FOC_d, FOC_I,y_test, h_y = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
@@ -1382,12 +1352,17 @@ class model:
                         for optimizer_idx in range(len(self.params['optimizers'])):
                             if "sgd" in self.params['learning_rate_schedule_type']:
                                 tf.summary.scalar('learning_rate_' + str(optimizer_idx), self.params["optimizers"][optimizer_idx]._decayed_lr(tf.float32), step=step)
+                            elif "piecewiseconstant" in self.params['learning_rate_schedule_type']:
+                                optimizer = self.params["optimizers"][optimizer_idx]
+                                current_lr = optimizer.learning_rate(step) if isinstance(optimizer.learning_rate, tf.keras.optimizers.schedules.LearningRateSchedule) else optimizer.lr
+                                tf.summary.scalar(f'learning_rate_{optimizer_idx}', current_lr, step=step)
                             else:
                                 tf.summary.scalar('learning_rate_' + str(optimizer_idx), self.params["optimizers"][optimizer_idx].lr, step=step)
 
                         ## Export losses
                         tf.summary.scalar('h_d', tf.reduce_mean(y_test), step=step)
                         tf.summary.scalar('h_y', tf.reduce_mean(h_y), step=step)
+                        tf.summary.scalar('loss_v_training', train_loss, step=step)
                         tf.summary.scalar('loss_v', test_losses[0], step=step)
                         tf.summary.scalar('loss_negative_mean_rhs', test_losses[1], step=step)
                         tf.summary.scalar('loss_dv_dY', test_losses[2], step=step)
