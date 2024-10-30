@@ -41,25 +41,7 @@ echo "${channel_type}, ${range_type}, ${batch_size}"
 # A_g_prime_min=0.14
 # A_g_prime_max=0.16
 # foldername="model_longer_${channel_type}_shortrange"
-
  
-# if [ "${range_type}" -eq 1 ]; then
-
-# echo "range_type=${range_type}"
-# A_g_prime_min=0.10
-# A_g_prime_max=0.20
-# foldername="model_1m2m_${channel_type}_widerange_512"
-
-# else
-
-# echo "range_type=${range_type}"
-
-# A_g_prime_min=0.14
-# A_g_prime_max=0.16
-# foldername="model_1m2m_${channel_type}_shortrange_512"
-
-# fi
-
 
 
 # batch_size="128"
@@ -68,7 +50,6 @@ echo "${channel_type}, ${range_type}, ${batch_size}"
 # batch_size="1024"
 
 num_neurons="32"
- 
 
 log_xi_min="-3.0"
 log_xi_max="5.0"
@@ -83,10 +64,10 @@ learning_rates="10e-5,10e-5,10e-5,10e-5"
 hidden_layer_activations="swish,tanh,tanh,softplus"
 output_layer_activations="softplus,custom,custom,softplus"
 num_hidden_layers="4"
- 
 
-# learning_rate_schedule_type="piecewiseconstant"
-learning_rate_schedule_type="None"
+
+learning_rate_schedule_type="piecewiseconstant"
+# learning_rate_schedule_type="None"
 delta="0.01"
 tensorboard='True'
 A_g_prime_length=3
@@ -110,7 +91,7 @@ A_g_prime_min=0.12
 A_g_prime_max=0.13
 
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Confusion_Delta_${delta}_learning_rates_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_Agmin_${A_g_prime_min}_Agmax_${A_g_prime_max}_logxi_${log_xi_min}_logximax_${log_xi_max}_logxibaseline_${log_xi_baseline_min}_num_iterations${num_iterations1}"
+foldername="Whether_loss_Delta_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
 
 fi
 

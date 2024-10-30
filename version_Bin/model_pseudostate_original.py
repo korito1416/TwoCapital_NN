@@ -1194,14 +1194,15 @@ class model:
 
             del tape
 
-            return grad
+            return grad, objective
         else:
             with tf.GradientTape(persistent=True) as tape:
                 objective = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control, training)
+            
             grad = tape.gradient(objective, self.v_nn.trainable_variables)
             del tape
 
-            return grad 
+            return grad , objective
 
     @tf.function
     def train_step(self):
@@ -1211,23 +1212,22 @@ class model:
             logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline = self.sample()
             log_I_g = None 
 
-        # print("Testing")
-        # print(logK, R, Y, gamma_3, A_g_prime, log_xi, log_I_g)
-        # print("Testing")
-
         ## First, train value function
         
-        grad = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= False, training=True)
+        grad, loss_v_train = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= False, training=True)
         self.params["optimizers"][0].apply_gradients(zip(grad, self.v_nn.trainable_variables))
 
         ## Second, train controls
-        grad = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= True, training=True)
+        grad, loss_c_train = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= True, training=True)
 
         if self.params['n_dims'] == 4:
             self.params["optimizers"][1].apply_gradients(zip(grad, self.i_g_nn.trainable_variables + self.i_d_nn.trainable_variables + self.i_I_nn.trainable_variables ))
         else:
             self.params["optimizers"][1].apply_gradients(zip(grad, self.i_g_nn.trainable_variables + self.i_d_nn.trainable_variables ))
 
+        return loss_v_train, loss_c_train
+    
+    
     def train(self):
 
         start_time = time.time()
@@ -1320,7 +1320,6 @@ class model:
                     log_I_g = None
 
                 ## Compute test loss
-                train_loss = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, training=True)
                 test_losses = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, training=False) 
                 ## Update normalization constants
                 if self.params["n_dims"] == 4:
@@ -1344,8 +1343,8 @@ class model:
 
                 ## Generate checkpoints for tensorboard
                 if self.params['tensorboard']:
-                    grad_v_nn = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=False, training=True)
-                    grad_controls = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=True, training=True)
+                    grad_v_nn,loss_v_train = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=False, training=True)
+                    grad_controls,loss_c_train = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=True, training=True)
 
                     with self.test_writer.as_default():
                         ## Export learning rates
@@ -1362,7 +1361,7 @@ class model:
                         ## Export losses
                         tf.summary.scalar('h_d', tf.reduce_mean(y_test), step=step)
                         tf.summary.scalar('h_y', tf.reduce_mean(h_y), step=step)
-                        tf.summary.scalar('loss_v_training', train_loss, step=step)
+                        # tf.summary.scalar('loss_v_training', train_loss, step=step)
                         tf.summary.scalar('loss_v', test_losses[0], step=step)
                         tf.summary.scalar('loss_negative_mean_rhs', test_losses[1], step=step)
                         tf.summary.scalar('loss_dv_dY', test_losses[2], step=step)
@@ -1429,7 +1428,11 @@ class model:
                         header=header,
                         comments='')
 
-            self.train_step()
+            loss_v_train, loss_c_train = self.train_step()
+            if self.params['tensorboard'] and step % self.params["logging_frequency"] == 0:
+                with self.train_writer.as_default():
+                    tf.summary.scalar('loss_value_train', loss_v_train, step=step)
+                    tf.summary.scalar('loss_control_train', loss_c_train, step=step)
 
         ## Use best neural networks 
         self.v_nn.set_weights(best_v_nn.get_weights())
