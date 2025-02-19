@@ -5,5 +5,12 @@ __pycache__/
 model_original_baseline/
 backup/
 output/
+output_LargeDelta/
+output_OldVersion/
+output_Scheduler/
+output_Scheduler_BestFinal/
+output_Scheduler_bestPostPost/
+output_Scheduler_bestPostPre/
+output_Scheduler_trainPostTech/
 result_save/
 model_results.json

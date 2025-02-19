@@ -15,7 +15,7 @@ import json
 
 #############################################
 #############################################
-#############################################
+############################################# Cap_damage/TwoCapital_NN/version_Bin/model_new_damage.py
 #############################################
 #############################################
 
@@ -44,23 +44,23 @@ export_folder_output             = sys.argv[16]
 log_xi_baseline_min              = float(sys.argv[17])
 log_xi_baseline_max              = float(sys.argv[18])
 channel_type                     = sys.argv[19]
-A_g_prime_min                    = float(sys.argv[20])
-A_g_prime_max                    = float(sys.argv[21])
-A_g_prime_length                 = int(sys.argv[22])
-gamma_3_length                   = int(sys.argv[23])
+
+ 
+
+Z_0= float(sys.argv[20])
+A_d= float(sys.argv[21])
+A_g=float(sys.argv[22])
+A_g_prime_list=   [float(x) for x in sys.argv[23].split(",")]
+eta=float(sys.argv[24])
+A_g_prime_max = A_g_prime_list[-1]
+A_g_prime_min = A_g_prime_list[0]
 
 
-'''
-export_folder = 'test_grad'
-log_xi_min = -3.0
-log_xi_max = -1.5
-batch_size = 16
-num_iterations = 10
-A_g_prime = 0.15
-pretrained_path = "None"
-logging_frequency = 1
-'''
+gamma_3_length                   = int(sys.argv[25])
 
+scheduler_num = int(sys.argv[26])
+scheduler_size = int(sys.argv[27])
+ 
 
 
 ## Take care of pretrained path
@@ -92,17 +92,16 @@ i_d_nn_config["final_activation"] = output_layer_activations[2]
 i_I_nn_config = {"num_hiddens" : [num_neurons for _ in range(num_hidden_layers)], "use_bias" : True, "activation" : hidden_layer_activations[3], "dim" : 1, "nn_name" : "i_I_nn"}
 i_I_nn_config["final_activation"] = output_layer_activations[3]
 
-# print(A_g_prime_num)        
-
-
+ 
 ## Create params struct 
 params = {"batch_size" : batch_size, "R_min" : 0.01, \
 "R_max" : 0.99, "logK_min" : 4.0,\
 "logK_max" : 7.0, "Y_min" : 10e-3, "Y_max" : 4.0, \
 "log_I_g_max" : 6.0, "log_I_g_min": 1.0, \
-"sigma_d" : 0.016 , "sigma_g" : 0.016, "A_d" : 0.12, "A_g_prime_min" : A_g_prime_min, "A_g_prime_max" : A_g_prime_max, "A_g_prime_length" : A_g_prime_length, \
+"sigma_d" : 0.01 , "sigma_g" : 0.01, 'Z_0':Z_0,\
+"A_d" : A_d, 'A_g': A_g ,'A_g_prime_list':A_g_prime_list ,"A_g_prime_min" : A_g_prime_min, "A_g_prime_max" : A_g_prime_max, 'A_g_prime_length': len(A_g_prime_list),  \
 "gamma_1" : 0.00017675, "gamma_2" : 2 * 0.0022, "gamma_3_min" : 0.0, "gamma_3_max" : 1.0/3.0, "gamma_3_length" : gamma_3_length,  \
-"y_bar" : 2.0, "beta_f" : 1.86 / 1000, "eta" : 0.17, \
+"y_bar" : 2.0, "beta_f" : 1.86 / 1000, "eta" : eta, \
 "varsigma" : 1.2 * 1.86 / 1000, "phi_d" : 16.7,  "phi_g" : 16.7, "Gamma" : 0.06,  \
 "alpha_d" : -0.035, "alpha_g" : -0.035, "delta" : delta, \
 "v_nn_config" : v_nn_config, "i_g_nn_config" : i_g_nn_config, "i_d_nn_config" : i_d_nn_config, \
@@ -117,8 +116,8 @@ if params["learning_rate_schedule_type"] == "None":
     lr_schedulers = learning_rates
     params["optimizers"] = [tf.keras.optimizers.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
 elif params["learning_rate_schedule_type"] == "piecewiseconstant":
-    boundaries            = [int(round(x)) for x in np.linspace(0,num_iterations,5)][1:-1]
-    values_list           = [[learning_rate / np.power(2,x) for x in range(len(boundaries)+1)] for learning_rate in learning_rates]
+    boundaries            = [int(round(x)) for x in np.linspace(0,num_iterations,scheduler_num)][1:-1]
+    values_list           = [[learning_rate / np.power(scheduler_size,x) for x in range(len(boundaries)+1)] for learning_rate in learning_rates]
     lr_schedulers         = [ tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values) for values in values_list]
     params["optimizers"] = [tf.keras.optimizers.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
 elif params["learning_rate_schedule_type"] == "sgd+piecewiseconstant":

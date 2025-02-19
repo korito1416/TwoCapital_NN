@@ -1,12 +1,11 @@
 #!/bin/sh
 
-
 #SBATCH --time=0-36:00:00
 #SBATCH --account=pi-lhansen
-#SBATCH --partition=caslake
+#SBATCH --partition=amd
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=100G
+#SBATCH --mem=21G
 
 # Load the default version of GNU parallel.
 module load parallel
@@ -17,10 +16,10 @@ module load cuda/11.2
 module load python/anaconda-2021.05
 
 # prefix="/scratch/midway3/pengyu"
+# prefix="/project/lhansen/Cap_damage/TwoCapital_NN/output_Scheduler_BestFinal"
 prefix="/project/lhansen/Cap_damage/TwoCapital_NN/output"
 
 
- 
 # channel_type="full"
 # channel_type="baseline"
 # channel_type="capital"
@@ -31,9 +30,11 @@ channel_type=$1
 range_type=$2
 batch_size=$3
 SLURM_NTASKS=$4
+A_g_prime_length=$5
+
 echo "${channel_type}, ${range_type}, ${batch_size}"
 
- 
+
 # A_g_prime_min=0.10
 # A_g_prime_max=0.20
 # foldername="model_longer_${channel_type}_widerange"
@@ -44,11 +45,6 @@ echo "${channel_type}, ${range_type}, ${batch_size}"
  
 
 
-# batch_size="128"
-# batch_size="256"
-# batch_size="512"
-# batch_size="1024"
-
 num_neurons="32"
 
 log_xi_min="-3.0"
@@ -56,11 +52,32 @@ log_xi_max="5.0"
 log_xi_baseline_min="-3.0"
 log_xi_baseline_max="5.0"
 num_iterations1="2000000"
+# num_iterations1="1"
 num_iterations2="2000000"
+
+# num_iterations1="1000000"
+# num_iterations2="1000000"
+# num_iterations1="200000"
+# num_iterations2="200000" 
+
+# num_iterations1="200"
+# num_iterations2="20" 
 
 # A_g_prime_num="0.15"
 logging_frequency="1000"
+
+learning_rates="40e-3,40e-3,40e-3,40e-3"
+learning_rates="60e-3,60e-3,60e-3,60e-3"
+learning_rates="80e-3,80e-3,80e-3,80e-3"
+learning_rates="10e-4,10e-4,10e-4,10e-4"
+learning_rates="40e-4,40e-4,40e-4,40e-4"
+# learning_rates="70e-4,70e-4,70e-4,70e-4"
 learning_rates="10e-5,10e-5,10e-5,10e-5"
+learning_rates="60e-5,60e-5,60e-5,60e-5"
+# learning_rates="40e-6,40e-6,40e-6,40e-6"
+# learning_rates="10e-7,10e-7,10e-7,10e-7"
+# learning_rates="40e-7,40e-7,40e-7,40e-7"
+# learning_rates="10e-8,10e-8,10e-8,10e-8"
 hidden_layer_activations="swish,tanh,tanh,softplus"
 output_layer_activations="softplus,custom,custom,softplus"
 num_hidden_layers="4"
@@ -70,32 +87,70 @@ learning_rate_schedule_type="piecewiseconstant"
 # learning_rate_schedule_type="None"
 delta="0.01"
 tensorboard='True'
-A_g_prime_length=3
+# A_g_prime_length=3
 gamma_3_length=20
- 
-if [ "${range_type}" -eq 1 ]; then
+
+scheduler_num='4'
+scheduler_num='6'
+# scheduler_num='8'
+# scheduler_num='10'
+
+scheduler_size='2'
+scheduler_size='4'
+# scheduler_size='6'
+# scheduler_size='8'
+# scheduler_size='10'
+
+# lambda_A_g_prime=1.063
+# lambda_A_g_prime=1.3292
+
+
+# original parameter settings
+Z_0=0.7
+A_d=0.12
+A_g=0.112857
+A_g_prime_list="0.120,0.128,0.136"
+eta=0.316
+
+
+# Z_0=0.3
+# A_d=0.12
+# A_g=0.112857
+# A_g_prime_list="0.120,0.128,0.136"
+# eta=0.135
+
+
+
+# Z_0=0.5
+# A_d=0.13
+# A_g=0.1
+# A_g_prime_list="0.128,0.136,0.144"
+# eta=0.175
+
+
+# Z_0=0.7
+# A_d=0.13
+# A_g=0.1086
+# A_g_prime_list="0.130,0.139,0.147"
+# eta=0.291
+
+
+# Z_0=0.3
+# A_d=0.13
+# A_g=0.08
+# A_g_prime_list="0.130,0.139,0.147"
+# eta=0.125
+
 
 echo "range_type=${range_type}"
-A_g_prime_min=0.10
-A_g_prime_max=0.20
-# foldername="Pseudo_model_1m2m_${channel_type}_widerange_${batch_size}"
-foldername="Pseudo_model_1m2m_${channel_type}_widerange_${batch_size}_neurons_${num_neurons}"
-
-else
-
-echo "range_type=${range_type}"
-
-# A_g_prime_min=0.19
-# A_g_prime_max=0.22
-A_g_prime_min=0.12
-A_g_prime_max=0.13
-
-# foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Whether_loss_Delta_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
-
-fi
 
 # foldername="model_test_${channel_type}_range_[$A_g_prime_min,$A_g_prime_max]"
+# foldername=Cap_damage/TwoCapital_NN/output/One_denom_Delta_0.01_LR_None_40e-7,40e-7,40e-7,40e-7_128_neurons_32_#HiddenLayer_4_logxi_-3.0_logximax_5.0_num_iterations2000000
+# foldername="A_g_prime_1.5_${A_g_prime_length}_Delta_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
+
+foldername="Scheduler_num_${scheduler_num}_size_${scheduler_size}_${eta}_Ag_${A_g}_AgPrime_${A_g_prime_list}_eta_${eta}_LR_${learning_rate_schedule_type}_${learning_rates}_num_iterations${num_iterations2}"
+
+
 
 job_name="${prefix}/${foldername}"
 jobout_name="${foldername}"
@@ -111,6 +166,13 @@ pretrained_post_tech_pre_damage_export_folder="None"
 pretrained_post_tech_post_damage_export_folder="None"
 
 
+# pretrain_folder="/project/lhansen/Cap_damage/TwoCapital_NN/output/NewModel_Ag_0.112857_AgPrime_0.120,0.128,0.136_eta_0.316_LR_piecewiseconstant_40e-7,40e-7,40e-7,40e-7_num_iterations200000"
+# pretrain_folder="/project/lhansen/Capital_NN/TwoCapital_NN/output/Four_distortion8_domain_full_shortrange_128_neurons_32_Agmin_0.12_Agmax_0.16_logxi_-3.0_logxibaseline_-3.0_num_iterations2000000"
+# pretrain_folder="/project/lhansen/Cap_damage/TwoCapital_NN/output_Scheduler_trainPostTech/Scheduler_num_8_size_4_0.316_Ag_0.112857_AgPrime_0.120,0.128,0.136_eta_0.316_LR_piecewiseconstant_10e-4,10e-4,10e-4,10e-4_num_iterations2000000"
+# pretrained_pre_tech_pre_damage_export_folder="${pretrain_folder}/pre_tech_pre_damage"
+# pretrained_pre_tech_post_damage_export_folder="${pretrain_folder}/pre_tech_post_damage"
+# pretrained_post_tech_pre_damage_export_folder="${pretrain_folder}/post_tech_pre_damage"
+# pretrained_post_tech_post_damage_export_folder="${pretrain_folder}/post_tech_post_damage"
 
 
 
@@ -142,7 +204,7 @@ echo "\$SLURM_JOB_NAME"
 echo "Program starts \$(date)"
 start_time=\$(date +%s)
 
-python version_Bin/post_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+python version_Bin/post_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $Z_0  $A_d $A_g $A_g_prime_list $eta  $gamma_3_length $scheduler_num $scheduler_size
 
 echo "Program ends \$(date)"
 end_time=\$(date +%s)
@@ -169,10 +231,10 @@ start_time=\$(date +%s)
 
 if [ "\${1}" -eq 0 ]; then
     echo "pre_tech_post_damage_channel_original"
-    python version_Bin/pre_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_pre_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+    python version_Bin/pre_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_pre_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $Z_0  $A_d $A_g $A_g_prime_list $eta $gamma_3_length $scheduler_num $scheduler_size
 else
     echo "post_tech_pre_damage_channel_original"
-    python version_Bin/post_tech_pre_damage_channel_pseudo_original.py $job_name $pre_tech_post_damage_export_folder $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+    python version_Bin/post_tech_pre_damage_channel_pseudo_original.py $job_name $pre_tech_post_damage_export_folder $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $Z_0  $A_d $A_g $A_g_prime_list $eta $gamma_3_length $scheduler_num $scheduler_size
 fi
 
 echo "Program ends \$(date)"
@@ -198,7 +260,7 @@ echo "Program starts \$(date)"
 start_time=\$(date +%s)
 
 echo "pre_tech_pre_damage"
-python version_Bin/pre_tech_pre_damage_channel_pseudo_original.py $job_name $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder -10 $log_xi_min $log_xi_max $batch_size $num_iterations2  $pretrained_pre_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+python version_Bin/pre_tech_pre_damage_channel_pseudo_original.py $job_name $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder -10 $log_xi_min $log_xi_max $batch_size $num_iterations2  $pretrained_pre_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $Z_0  $A_d $A_g $A_g_prime_list $eta $gamma_3_length $scheduler_num $scheduler_size
 
 
 
@@ -215,10 +277,11 @@ EOF
 
 
 
-
-
 # When running a large number of tasks simultaneously, it may be necessary to increase the user process limit.
 ulimit -u 10000
+
+
+
 
 # This specifies the options used to run srun. The "-N1 -n1" options are used to allocate a single core to each task.
 srun="srun --exclusive -N1 -n1"

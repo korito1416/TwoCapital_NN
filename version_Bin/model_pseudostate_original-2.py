@@ -4,7 +4,8 @@
 ######################################################################
 ######################################################################
 
-    
+#note line 1425-1436: distorted probability
+
 import numpy as np
 import tensorflow as tf
 import time
@@ -17,7 +18,7 @@ import os
 import pandas as pd
 
 
-tf.random.set_seed(1031)
+tf.random.set_seed(11117)
 
 
 class FeedForwardSubNet(tf.keras.Model):
@@ -88,15 +89,14 @@ class model:
         print("Tensorboard boolean =", self.params['tensorboard'] )
 
  
-        # self.params["A_g_prime_list"]     =  [self.params["A_g"] * self.params["lambda_A_g_prime"]**(1+i) for i in range(self.params["A_g_prime_length"]) ]
-        
+        self.params["A_g_prime_list"]     = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"]).tolist()
         self.params["gamma_3_list"]       = np.linspace(self.params["gamma_3_min"], self.params["gamma_3_max"], self.params["gamma_3_length"]).tolist()
 
         ## Create tensors to store normalizing constants 
         consumption_guess =  ( np.exp(self.params["logK_max"]) + np.exp(self.params["logK_min"]) ) / 2 * 0.1 ## assume consuming 10% of capital
 
-        self.flow_pv_norm                          =  tf.ones(shape = (self.params['batch_size'],1) ) #* self.params['delta'] * np.log(consumption_guess)
-        self.marginal_utility_of_consumption_norm  =  tf.ones(shape = (self.params['batch_size'],1) ) #* self.params['delta'] / consumption_guess
+        self.flow_pv_norm                          =  tf.ones(shape = (self.params['batch_size'],1) ) # * self.params['delta'] * np.log(consumption_guess)
+        self.marginal_utility_of_consumption_norm  =  tf.ones(shape = (self.params['batch_size'],1) ) # * self.params['delta'] / consumption_guess
 
         ## Create neural networks
         self.v_nn    = FeedForwardSubNet(self.params['v_nn_config'])
@@ -104,7 +104,8 @@ class model:
         self.i_d_nn  = FeedForwardSubNet(self.params['i_d_nn_config'])
             
         if "pre_damage" in self.params["model_type"] and "post_tech" in self.params["model_type"]:
- 
+            # print(self.params["model_type"])
+
             ## Load post tech post damage model
 
             self.v_post_tech_post_damage_nn = FeedForwardSubNet(self.params['v_nn_config'])
@@ -160,6 +161,7 @@ class model:
 
         self.params["state_intervals"]["log_xi"] = tf.reshape(tf.linspace(self.params['log_xi_min'], self.params['log_xi_max'], self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
         self.params["state_intervals"]["log_xi_interval_size"] =  self.params["state_intervals"]["log_xi"][1] -  self.params["state_intervals"]["log_xi"][0]
+
 
 
         self.params["state_intervals"]["log_xi_baseline"] = tf.reshape(tf.linspace(self.params['log_xi_baseline_min'], self.params['log_xi_baseline_max'], self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
@@ -300,26 +302,111 @@ class model:
 
             
         if "pre_tech" in self.params["model_type"] and "post_damage" in self.params["model_type"]:
+            
 
-            X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi, log_xi, log_xi], 1)
-            i_I                             = self.i_I_nn(X)
-            i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            # Three channels making differences: 
+            # 1. Capital
+            # 2. Temperature
+            # 3. Technology
+            # Five cases:
+            # 1. Full 2. Capital 3. Temperature 4. Technology 5. Baseline
 
+
+            if self.params["channel_type"]=="full":
+
+                X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi, log_xi, log_xi], 1)
+                i_I                             = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+
+            elif self.params["channel_type"]=="capital":
+
+                X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi, log_xi_baseline, log_xi_baseline], 1)
+                i_I                             = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+
+            elif self.params["channel_type"]=="climate":
+
+                X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi_baseline, log_xi, log_xi_baseline], 1)
+                i_I                             = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+
+            elif self.params["channel_type"]=="technology":
+                X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi_baseline, log_xi_baseline, log_xi], 1)
+                i_I                             = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            
+            else:
+                X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi_baseline, log_xi_baseline, log_xi_baseline], 1)
+                i_I                             = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
 
         if "pre_damage" in self.params["model_type"] and "post_tech" in self.params["model_type"]:
+            
 
-            X = tf.concat([logK, R, Y, A_g_prime, log_xi, log_xi], 1)
- 
+            # Three channels making differences: 
+            # 1. Capital
+            # 2. Temperature
+            # Five cases:
+            # 1. Full 2. Capital 3. Temperature 4. Baseline
+            
+
+            if self.params["channel_type"]=="full":
+
+                X = tf.concat([logK, R, Y, A_g_prime, log_xi, log_xi], 1)
+            elif self.params["channel_type"]=="capital":
+
+                X = tf.concat([logK, R, Y, A_g_prime, log_xi, log_xi_baseline], 1)
+            elif self.params["channel_type"]=="climate":
+
+                X = tf.concat([logK, R, Y, A_g_prime, log_xi_baseline, log_xi], 1)
+            else:
+
+                X = tf.concat([logK, R, Y, A_g_prime, log_xi_baseline, log_xi_baseline], 1)
+                
 
         if "pre_tech" in self.params["model_type"] and "pre_damage" in self.params["model_type"]:
             
-            X           = tf.concat([logK, R, Y, log_I_g, log_xi, log_xi, log_xi], 1)
-            i_I         = self.i_I_nn(X)
-            i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
 
+            # Four channels making differences: 
+            # 1. Capital
+            # 2. Temperature
+            # 3. Technology
+            # Six cases:
+            # 1. Full 2. Capital 3. Temperature 4. Technology 5. Baseline
 
+            if self.params["channel_type"]=="full":
+
+                X           = tf.concat([logK, R, Y, log_I_g, log_xi, log_xi, log_xi], 1)
+                i_I         = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+
+            if self.params["channel_type"]=="capital":
+
+                X           = tf.concat([logK, R, Y, log_I_g, log_xi, log_xi_baseline, log_xi_baseline], 1)
+                i_I         = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+
+            if self.params["channel_type"]=="climate":
+
+                X           = tf.concat([logK, R, Y, log_I_g, log_xi_baseline, log_xi, log_xi_baseline], 1)
+                i_I         = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+
+
+            if self.params["channel_type"]=="technology":
+
+                X           = tf.concat([logK, R, Y, log_I_g, log_xi_baseline, log_xi_baseline, log_xi], 1)
+                i_I         = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+
+            if self.params["channel_type"]=="baseline":
+
+                X           = tf.concat([logK, R, Y, log_I_g, log_xi_baseline, log_xi_baseline, log_xi_baseline], 1)
+                i_I         = self.i_I_nn(X)
+                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            
 
         xi  = tf.exp(log_xi)
         xi_baseline  = tf.exp(log_xi_baseline)
@@ -362,53 +449,203 @@ class model:
             v_diff_j_vals = []
 
             for k in range(self.params["gamma_3_length"]):
-                     
-                X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
-                tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi, log_xi, log_xi], 1)
-                v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
-                v_m_vals.append( v_m )
+                    
 
-                f_m       = tf.exp(-1.0/ xi * (v_m - v))
-                f_m_log   = -1.0/ xi * (v_m - v)
+                if self.params["channel_type"]=="full":
 
-                f_ms.append(f_m)
-                f_m_logs.append(f_m_log)
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
+                    tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi, log_xi, log_xi], 1)
+                    v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
+                    v_m_vals.append( v_m )
+
+                    f_m       = tf.exp(-1.0/ xi * (v_m - v))
+                    f_m_log   = -1.0/ xi * (v_m - v)
+
+                    f_ms.append(f_m)
+                    f_m_logs.append(f_m_log)
+
+                elif self.params["channel_type"]=="capital":
+
+
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
+                    tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi, log_xi_baseline, log_xi_baseline], 1)
+                    v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
+                    v_m_vals.append( v_m )
+
+                    f_m       = tf.exp(-1.0/ xi * (v_m - v))
+                    f_m_log   = -1.0/ xi * (v_m - v)
+
+                    f_ms.append(f_m)
+                    f_m_logs.append(f_m_log)
+
+                elif self.params["channel_type"]=="climate":
+
+
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
+                    tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi, log_xi_baseline], 1)
+                    v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
+                    v_m_vals.append( v_m )
+
+                    f_m       = tf.exp(-1.0/ xi * (v_m - v))
+                    f_m_log   = -1.0/ xi * (v_m - v)
+
+                    f_ms.append(f_m)
+                    f_m_logs.append(f_m_log)
+
+
+                elif self.params["channel_type"]=="damage":
+
+                
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g,
+                    tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi], 1)
+                    v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
+                    v_m_vals.append( v_m )
+
+                    f_m       = tf.exp(-1.0/ xi * (v_m - v))
+                    f_m_log   = -1.0/ xi * (v_m - v)
+
+                    f_ms.append(f_m)
+                    f_m_logs.append(f_m_log)
+
+                elif self.params["channel_type"]=="technology":
+
+                
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
+                    tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi], 1)
+                    v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
+                    v_m_vals.append( v_m )
+
+                    f_m       = tf.exp(-1.0/ xi * (v_m - v))
+                    f_m_log   = -1.0/ xi * (v_m - v)
+
+                    f_ms.append(f_m)
+                    f_m_logs.append(f_m_log)
+
+                else:
+
+            
+                    X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
+                    tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi_baseline], 1)
+                    v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
+                    v_m_vals.append( v_m )
+
+                    f_m       = tf.exp(-1.0/ xi_baseline * (v_m - v))
+                    f_m_log   = -1.0/ xi_baseline * (v_m - v)
+
+                    f_ms.append(f_m)
+                    f_m_logs.append(f_m_log)
+
 
 
 
             for j in range(self.params["A_g_prime_length"]):
- 
-                X_post_tech_pre_damage = tf.concat([logK, R, Y, 
-                tf.ones(tf.shape(Y)) * self.params["A_g_prime_list"][j], log_xi, log_xi],  1)
-                v_j                    = self.v_post_tech_pre_damage_nn(X_post_tech_pre_damage)
-                v_j_vals.append( v_j )
-                v_diff_temp                        = v_j - v
-                g_j                           = tf.exp(-1.0/ xi * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  ))
-                g_j_log                       = -1.0/ xi * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  )
-                
-                g_js.append(g_j)
-                g_j_logs.append(g_j_log)
- 
- 
- 
+
+
+                if self.params["channel_type"]=="full":
+
+                    X_post_tech_pre_damage = tf.concat([logK, R, Y, 
+                    tf.ones(tf.shape(Y)) * self.params["A_g_prime_list"][j], log_xi, log_xi],  1)
+                    v_j                    = self.v_post_tech_pre_damage_nn(X_post_tech_pre_damage)
+                    v_j_vals.append( v_j )
+                    v_diff_temp                        = v_j - v
+                    g_j                           = tf.exp(-1.0/ xi * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  ))
+                    g_j_log                       = -1.0/ xi * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  )
+                    
+                    g_js.append(g_j)
+                    g_j_logs.append(g_j_log)
+
+                elif self.params["channel_type"]=="capital":
+
+                    X_post_tech_pre_damage = tf.concat([logK, R, Y, 
+                    tf.ones(tf.shape(Y)) * self.params["A_g_prime_list"][j], log_xi, log_xi_baseline],  1)
+                    v_j                    = self.v_post_tech_pre_damage_nn(X_post_tech_pre_damage)
+                    v_j_vals.append( v_j )
+                    v_diff_temp                        = v_j - v
+                    g_j                           = tf.exp(-1.0/ xi * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  ))
+                    g_j_log                       = -1.0/ xi * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  )
+                    
+                    g_js.append(g_j)
+                    g_j_logs.append(g_j_log)
+
+                elif self.params["channel_type"]=="climate":
+
+
+                    X_post_tech_pre_damage = tf.concat([logK, R, Y, 
+                    tf.ones(tf.shape(Y)) * self.params["A_g_prime_list"][j], log_xi_baseline, log_xi],  1)
+                    v_j                    = self.v_post_tech_pre_damage_nn(X_post_tech_pre_damage)
+                    v_j_vals.append( v_j )
+                    v_diff_temp                        = v_j - v
+                    g_j                           = tf.exp(-1.0/ xi * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  ))
+                    g_j_log                       = -1.0/ xi * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  )
+                    
+                    g_js.append(g_j)
+                    g_j_logs.append(g_j_log)
+
+                else:
+
+            
+                    X_post_tech_pre_damage = tf.concat([logK, R, Y, 
+                    tf.ones(tf.shape(Y)) * self.params["A_g_prime_list"][j], log_xi_baseline, log_xi_baseline],  1)
+                    v_j                    = self.v_post_tech_pre_damage_nn(X_post_tech_pre_damage)
+                    v_j_vals.append( v_j )
+                    v_diff_temp                        = v_j - v
+                    g_j                           = tf.exp(-1.0/ xi_baseline * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  ))
+                    g_j_log                       = -1.0/ xi_baseline * (  tf.reshape( tf.math.maximum( v_diff_temp , 0.0000000001), [self.params["batch_size"], 1])  )
+                    
+                    g_js.append(g_j)
+                    g_j_logs.append(g_j_log)
+
+
+        ## Compute h which is present in all models
+        # h                             =   - 1.0 /  xi  * (( dv_dY  - (self.params['gamma_1'] \
+        # + self.params['gamma_2'] * Y   )   ) *  self.params['varsigma'] * \
+        # self.params['eta'] * self.params['A_d'] * (1-R) * K   )  
+
+        # beta_f   = (self.params["beta_f"] + self.params["varsigma"] * h)    ## beta_f must be adjusted
+
         ## Compute h distortion: capital, climate, technology
-        h_y                             =   - 1.0 /  xi  * (( dv_dY  - (self.params['gamma_1'] \
-        + self.params['gamma_2'] * Y   )   ) *  self.params['varsigma'] * \
-        self.params['eta'] * self.params['A_d'] * (1-R) * K   )  
-  
+        if self.params["channel_type"]=="full" or self.params["channel_type"]=="climate": 
+
+            h_y                             =   - 1.0 /  xi  * (( dv_dY  - (self.params['gamma_1'] \
+            + self.params['gamma_2'] * Y   )   ) *  self.params['varsigma'] * \
+            self.params['eta'] * self.params['A_d'] * (1-R) * K   )  
+        else: 
+
+            h_y                             =   - 1.0 /  xi_baseline  * (( dv_dY  - (self.params['gamma_1'] \
+            + self.params['gamma_2'] * Y   )   ) *  self.params['varsigma'] * \
+            self.params['eta'] * self.params['A_d'] * (1-R) * K   )  
+
 
         beta_f   = (self.params["beta_f"] + self.params["varsigma"] * h_y)    ## beta_f must be adjusted
 
+        # y_test = self.params["varsigma"] * h_y * (self.params["eta"] *  self.params["A_d"] * (1-R) * K)
 
         
-  
-        h_d = - 1.0 / xi * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"])
-        h_g = - 1.0 / xi * ((dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"])
+        if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
 
+            # h_k = - 1.0 / xi * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"] + (dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"] )
+
+            h_d = - 1.0 / xi * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"])
+            h_g = - 1.0 / xi * ((dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"])
+
+
+        else: 
+
+            # h_k = - 1.0 / xi_baseline * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"] + (dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"] )
+            
+            h_d = - 1.0 / xi_baseline * ((dv_dlogK - R * dv_dR ) * (1-R) * self.params["sigma_d"])
+            h_g = - 1.0 / xi_baseline * ((dv_dlogK + (1-R) * dv_dR ) * R * self.params["sigma_g"])
 
         if self.params["n_dims"] == 4:
-            h_R = - 1.0 / xi * self.params["sigma_I"] * dv_dI_g
- 
+
+
+            if self.params["channel_type"]=="full" or self.params["channel_type"]=="technology": 
+
+                h_R = - 1.0 / xi * self.params["sigma_I"] * dv_dI_g
+            else: 
+
+                h_R = - 1.0 / xi_baseline * self.params["sigma_I"] * dv_dI_g
+
 
 
 
@@ -474,6 +711,9 @@ class model:
 
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
             
+            # rhs = rhs + (- 1.0 / xi ) * ((dv_dlogK - R * dv_dR )**2) * ((1-R)**2) * (self.params["sigma_d"]**2)
+
+            # rhs = rhs + (- 1.0 / xi ) * ((dv_dlogK + (1-R) * dv_dR )**2) * (R**2) * (self.params["sigma_g"]**2)
 
             rhs = rhs + h_d * ((dv_dlogK - R * dv_dR)*(1-R)*self.params["sigma_d"])
             rhs = rhs + h_g *((dv_dlogK + (1-R) * dv_dR)*R*self.params["sigma_g"])
@@ -484,6 +724,9 @@ class model:
             rhs = rhs + xi  * tf.pow(h_y,2) / 2 
             
 
+        else: 
+
+            rhs = rhs + xi_baseline  * tf.pow(h_y,2) / 2  
 
 
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="capital": 
@@ -493,6 +736,11 @@ class model:
             rhs = rhs + xi  * tf.pow(h_g,2) / 2  
 
 
+        else: 
+
+            rhs = rhs + xi_baseline  * tf.pow(h_d,2) / 2  
+
+            rhs = rhs + xi_baseline  * tf.pow(h_g,2) / 2  
 
 
         if self.params["n_dims"] == 4:
@@ -518,6 +766,20 @@ class model:
             v_m_vals = []
 
             for k in range(self.params["gamma_3_length"]):
+                # X_post_tech_post_damage                   = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi, A_g_prime], 1)
+
+                # v_m                    =  self.v_post_tech_post_damage_nn(X_post_tech_post_damage) 
+                # v_m_vals.append( v_m )
+
+                # f_m       = tf.exp(-1.0/ xi * (v_m - v))
+                # f_m_log   = -1.0/ xi * (v_m - v)
+
+                # f_ms.append(f_m)
+                # f_m_logs.append( f_m_log  )
+
+                # rhs = rhs + I_d *  (f_ms[k] * ( v_m_vals[k] - v ) + \
+                # xi * (1.0 - f_ms[k] + f_ms[k] * f_m_logs[k] )) / self.params['gamma_3_length']
+                    
 
                 if self.params["channel_type"]=="full":
 
@@ -802,7 +1064,7 @@ class model:
 
         marginal_util_c_over_k = self.params["delta"] / inside_log
 
-        FOC_g   = - marginal_util_c_over_k  + self.params["Gamma"] / ( inside_log_i_g ) * self.params["phi_g"] * (dv_dlogK +  (1.0 - R) * dv_dR) 
+        FOC_g   = - marginal_util_c_over_k  + self.params["Gamma"] / ( inside_log_i_g ) * self.params["phi_g"] * (dv_dlogK +  (1.0 - R) * dv_dR)
         FOC_d   = - marginal_util_c_over_k  + self.params["Gamma"] / ( inside_log_i_d ) * self.params["phi_d"] * (dv_dlogK - R * dv_dR)
         
 
@@ -816,7 +1078,7 @@ class model:
 
     @tf.function
     def objective_fn(self, logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g = None, compute_control = False, training = True):
- 
+
         ## This is the objective function that stochastic gradient descend will try to minimize
         ## It depends on which NN it is training. Controls and value functions have different
         ## objectives.
@@ -860,33 +1122,26 @@ class model:
                 loss_constraints        = loss_constraints + loss_i_I_mse
             
             if control_constraints > 0:
-                loss_dv_dY=   dv_dY  * tf.reshape( tf.cast(Y > self.params['y_bar'], tf.float32 ),  [self.params["batch_size"], 1]) \
-                    * tf.reshape( tf.cast( dv_dY > 0.0, tf.float32 ),  [self.params["batch_size"], 1]) + 10e-4
-                # return tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm)))    
-                # tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm)))    
-                #tf.reduce_mean(self.marginal_utility_of_consumption_norm )
-                return loss_constraints , tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm)))  
+                return loss_constraints
 
             if compute_control:
-                loss_dv_dY=   dv_dY  * tf.reshape( tf.cast(Y > self.params['y_bar'], tf.float32 ),  [self.params["batch_size"], 1]) \
-                    * tf.reshape( tf.cast( dv_dY > 0.0, tf.float32 ),  [self.params["batch_size"], 1]) + 10e-4
-                # loss_dv_dY = 10e-4
+                
                 ## Optimizing all three together
                 if self.params['n_dims'] == 4:
                     return -tf.reduce_mean( (rhs - pv ) / self.flow_pv_norm ) + \
                         tf.sqrt(tf.reduce_mean(tf.square(FOC_g / self.marginal_utility_of_consumption_norm)))  + \
                         tf.sqrt(tf.reduce_mean(tf.square(FOC_d / self.marginal_utility_of_consumption_norm))) + \
-                        tf.sqrt(tf.reduce_mean(tf.square(FOC_I / self.marginal_utility_of_consumption_norm))) , tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm)))
+                        tf.sqrt(tf.reduce_mean(tf.square(FOC_I / self.marginal_utility_of_consumption_norm))) 
                 else:
                     return -tf.reduce_mean( (rhs - pv ) / self.flow_pv_norm ) + \
                         tf.sqrt(tf.reduce_mean(tf.square(FOC_g / self.marginal_utility_of_consumption_norm)))  + \
-                        tf.sqrt(tf.reduce_mean(tf.square(FOC_d / self.marginal_utility_of_consumption_norm))) , tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm)))
+                        tf.sqrt(tf.reduce_mean(tf.square(FOC_d / self.marginal_utility_of_consumption_norm))) 
             else:
 
                 ## loss associated with dv/dY > 0
                 loss_dv_dY = dv_dY  * tf.reshape( tf.cast(Y > self.params['y_bar'], tf.float32 ),  [self.params["batch_size"], 1]) \
-                    * tf.reshape( tf.cast( dv_dY > 0.0, tf.float32 ),  [self.params["batch_size"], 1]) + 10e-4
-                # loss_dv_dY = 10e-4
+                    * tf.reshape( tf.cast( dv_dY > 0, tf.float32 ),  [self.params["batch_size"], 1]) + 10e-4
+
 
                 if self.params['n_dims'] == 4:
                     loss_v_diff = 0
@@ -900,15 +1155,15 @@ class model:
 
                 else:
                     loss = tf.sqrt(tf.reduce_mean(tf.square( (rhs - pv) / self.flow_pv_norm )))  + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm))) + tf.sqrt(tf.reduce_mean(tf.square(FOC_g / self.marginal_utility_of_consumption_norm))) + tf.sqrt(tf.reduce_mean(tf.square(FOC_d / self.marginal_utility_of_consumption_norm))) 
-                    # loss=tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm)))
-                return loss, tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm)))
+                    
+                return loss
 
         else:
 
             ## loss associated with dv/dY > 0
             loss_dv_dY = dv_dY * tf.reshape( tf.cast(Y > self.params['y_bar'], tf.float32 ),  [self.params["batch_size"], 1]) \
                 * tf.reshape( tf.cast( dv_dY > 0.0, tf.float32 ),  [self.params["batch_size"], 1])  + 10e-4
-            
+
             if self.params["n_dims"] == 4:
 
                 ## loss associated with v_diff
@@ -921,14 +1176,14 @@ class model:
                 return tf.sqrt(tf.reduce_mean(tf.square( (rhs - pv)  / self.flow_pv_norm  ))), -tf.reduce_mean(rhs  / self.flow_pv_norm ), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_c / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_g / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_d / self.marginal_utility_of_consumption_norm))),  tf.sqrt(tf.reduce_mean(tf.square(FOC_g / self.marginal_utility_of_consumption_norm))), \
                     tf.sqrt(tf.reduce_mean(tf.square(FOC_d / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(FOC_I / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_i_I / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_v_diff / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dI_g / self.marginal_utility_of_consumption_norm)))
             else:
-                return tf.sqrt(tf.reduce_mean(tf.square((rhs - pv)  / self.flow_pv_norm ))), -tf.reduce_mean(rhs  / self.flow_pv_norm ), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY/tf.stop_gradient(self.marginal_utility_of_consumption_norm )))), tf.sqrt(tf.reduce_mean(tf.square(loss_c / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_g / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_d / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(FOC_g / self.marginal_utility_of_consumption_norm))), \
+                return tf.sqrt(tf.reduce_mean(tf.square((rhs - pv)  / self.flow_pv_norm ))), -tf.reduce_mean(rhs  / self.flow_pv_norm ), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_c / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_g / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_d / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(FOC_g / self.marginal_utility_of_consumption_norm))), \
                     tf.sqrt(tf.reduce_mean(tf.square(FOC_d / self.marginal_utility_of_consumption_norm))) 
 
     def grad(self, logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g = None, compute_control = False, training = True):
 
         if compute_control:
             with tf.GradientTape(persistent=True) as tape:
-                objective,training_loss_dV_dY = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control, training)
+                objective = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control, training)
 
             if self.params['n_dims'] == 4:
                 trainable_variables = self.i_g_nn.trainable_variables + self.i_d_nn.trainable_variables + self.i_I_nn.trainable_variables
@@ -939,15 +1194,15 @@ class model:
 
             del tape
 
-            return grad, objective,training_loss_dV_dY
+            return grad, objective
         else:
             with tf.GradientTape(persistent=True) as tape:
-                objective,training_loss_dV_dY = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control, training)
+                objective = self.objective_fn(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control, training)
             
             grad = tape.gradient(objective, self.v_nn.trainable_variables)
             del tape
 
-            return grad , objective,training_loss_dV_dY
+            return grad , objective
 
     @tf.function
     def train_step(self):
@@ -959,18 +1214,18 @@ class model:
 
         ## First, train value function
         
-        grad, loss_v_train,training_loss_dV_dY = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= False, training=True)
+        grad, loss_v_train = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= False, training=True)
         self.params["optimizers"][0].apply_gradients(zip(grad, self.v_nn.trainable_variables))
 
         ## Second, train controls
-        grad, loss_c_train ,training_loss_dV_dY_1 = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= True, training=True)
+        grad, loss_c_train = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control= True, training=True)
 
         if self.params['n_dims'] == 4:
             self.params["optimizers"][1].apply_gradients(zip(grad, self.i_g_nn.trainable_variables + self.i_d_nn.trainable_variables + self.i_I_nn.trainable_variables ))
         else:
             self.params["optimizers"][1].apply_gradients(zip(grad, self.i_g_nn.trainable_variables + self.i_d_nn.trainable_variables ))
 
-        return loss_v_train, loss_c_train,training_loss_dV_dY
+        return loss_v_train, loss_c_train
     
     
     def train(self):
@@ -1072,7 +1327,9 @@ class model:
                 else:
                     rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d, y_test, h_y = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
 
- 
+                # self.flow_pv_norm = (1.0 - self.params['norm_weight']) * self.flow_pv_norm + self.params['norm_weight'] * pv
+                # self.marginal_utility_of_consumption_norm = (1.0 - self.params['norm_weight']) * self.marginal_utility_of_consumption_norm + self.params['norm_weight'] * marginal_utility_of_consumption_norm
+
                 ## Store best neural networks
                 if (test_losses[0] < min_loss):
                     min_loss = test_losses[0]
@@ -1086,8 +1343,8 @@ class model:
 
                 ## Generate checkpoints for tensorboard
                 if self.params['tensorboard']:
-                    grad_v_nn,loss_v_train,training_loss_dV_dY = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=False, training=True)
-                    grad_controls,loss_c_train,training_loss_dV_dY = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=True, training=True)
+                    grad_v_nn,loss_v_train = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=False, training=True)
+                    grad_controls,loss_c_train = self.grad(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g, compute_control=True, training=True)
 
                     with self.test_writer.as_default():
                         ## Export learning rates
@@ -1104,6 +1361,7 @@ class model:
                         ## Export losses
                         tf.summary.scalar('h_d', tf.reduce_mean(y_test), step=step)
                         tf.summary.scalar('h_y', tf.reduce_mean(h_y), step=step)
+                        # tf.summary.scalar('loss_v_training', train_loss, step=step)
                         tf.summary.scalar('loss_v', test_losses[0], step=step)
                         tf.summary.scalar('loss_negative_mean_rhs', test_losses[1], step=step)
                         tf.summary.scalar('loss_dv_dY', test_losses[2], step=step)
@@ -1170,12 +1428,11 @@ class model:
                         header=header,
                         comments='')
 
-            loss_v_train, loss_c_train,training_loss_dV_dY = self.train_step()
+            loss_v_train, loss_c_train = self.train_step()
             if self.params['tensorboard'] and step % self.params["logging_frequency"] == 0:
                 with self.train_writer.as_default():
                     tf.summary.scalar('loss_value_train', loss_v_train, step=step)
                     tf.summary.scalar('loss_control_train', loss_c_train, step=step)
-                    tf.summary.scalar('loss_dV_dY_train', training_loss_dV_dY, step=step)
 
         ## Use best neural networks 
         self.v_nn.set_weights(best_v_nn.get_weights())
@@ -1531,17 +1788,55 @@ class model:
         pathlib.Path(export_folder).mkdir(parents=True, exist_ok=True) 
         
         ## Initial state 
-        init_logK     = tf.math.log(880.0)
-        init_R        = self.params['Z_0']
+        init_logK     = tf.math.log(739.0)
+        init_R        = 0.5  
         init_I_g      = tf.math.log(11.2)
         init_Y        = 1.1
 
+        # state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi,  init_I_g]] )
+        # state         = tf.reshape(state, (1,5))
 
-        state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi,  log_xi,  log_xi]] )
- 
+
+
+        if self.params["channel_type"] == "full":
+            state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi,  log_xi,  log_xi]] )
+        elif self.params["channel_type"] == "capital":
+
+            state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi,  log_xi_baseline,  log_xi_baseline]] )
+        elif self.params["channel_type"] == "climate":
+
+            state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi_baseline,  log_xi,  log_xi_baseline]] )
+        # elif self.params["channel_type"] == "damage":
+
+        #     state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi_baseline,  log_xi_baseline,  log_xi,  log_xi_baseline,  init_I_g]] )
+        elif self.params["channel_type"] == "technology":
+
+            state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi_baseline,  log_xi_baseline,  log_xi]] )
+        elif self.params["channel_type"] == "baseline":
+
+            state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi_baseline,  log_xi_baseline,  log_xi_baseline]] )
+
         state         = tf.reshape(state, (1,7))
 
- 
+
+        # state_pre     = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi, A_g_prime]] )
+        # state_pre     = tf.reshape(state_pre, (1,5)) 
+
+
+        # if self.params["channel_type"] == "full":
+        #     state_pre_damage_post_tech         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi,  log_xi]] )
+        # elif self.params["channel_type"] == "capital":
+
+        #     state_pre_damage_post_tech         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi,  log_xi_baseline]] )
+        # elif self.params["channel_type"] == "climate":
+
+        #     state_pre_damage_post_tech         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi_baseline,  log_xi]] )
+
+        # else:
+
+        #     state_pre_damage_post_tech         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi_baseline,  log_xi_baseline]] )
+
+
         state_list       = [state]
         # state_pre_list   = [state_pre]
 
@@ -1563,13 +1858,21 @@ class model:
 
         for k in range(self.params["gamma_3_length"]):
 
- 
+            # state_pre_tech_post_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, self.params["gamma_3_list"][k], log_xi, init_I_g]] )
+            # state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,6))
+            # v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)
+            # v_m_vals.append( v_m )
+            # f_m       = tf.exp(-1.0/ np.exp(log_xi) * (v_m - v))
+            # f_ms.append(f_m)
+
+
+
 
             if self.params["channel_type"] == "full":
                                                                                                             #cap     # tempe  # tech    
                 # state_pre_tech_post_damage         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi,  log_xi,  log_xi,  init_I_g]] )
 
-                state_pre_tech_post_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, self.params['y_bar'], init_I_g,
+                state_pre_tech_post_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, init_I_g,
                                                                          self.params["gamma_3_list"][k], log_xi, log_xi, log_xi]] )
 
                 state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
@@ -1578,23 +1881,112 @@ class model:
                 f_m       = tf.exp(-1.0/ np.exp(log_xi) * (v_m - v))
                 f_ms.append(f_m)
 
+            # if self.params["channel_type"] == "capital":
+
+            
+            #     state_pre_tech_post_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, init_I_g,
+            #                                                              self.params["gamma_3_list"][k], log_xi, log_xi_baseline, log_xi_baseline]] )
+
+            #     state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
+            #     v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)
+            #     v_m_vals.append( v_m )
+            #     f_m       = tf.exp(-1.0/ np.exp(log_xi) * (v_m - v))
+            #     f_ms.append(f_m)
+
+            # if self.params["channel_type"] == "climate":
+
+            
+            #     state_pre_tech_post_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, init_I_g,
+            #                                                              self.params["gamma_3_list"][k], log_xi_baseline, log_xi, log_xi_baseline]] )
+
+            #     state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
+            #     v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)
+            #     v_m_vals.append( v_m )
+            #     f_m       = tf.exp(-1.0/ np.exp(log_xi) * (v_m - v))
+            #     f_ms.append(f_m)
+
+            # if self.params["channel_type"] == "technology":
+
+            
+            #     state_pre_tech_post_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, init_I_g,
+            #                                                             self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi]] )
+
+            #     state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
+            #     v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)
+            #     v_m_vals.append( v_m )
+            #     f_m       = tf.exp(-1.0/ np.exp(log_xi) * (v_m - v))
+            #     f_ms.append(f_m)
+
+
+            # else:
+
+            
+            #     state_pre_tech_post_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, init_I_g,
+            #                                                             self.params["gamma_3_list"][k], log_xi_baseline, log_xi_baseline, log_xi_baseline]] )
+
+            #     state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
+            #     v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)
+            #     v_m_vals.append( v_m )
+            #     f_m       = tf.exp(-1.0/ np.exp(log_xi_baseline) * (v_m - v))
+            #     f_ms.append(f_m)
 
         f_ms_list         = [f_ms]
 
+        # g_js = []
+        # g_j_logs = []
+        # v_j_vals = []
+        # v_diff_j_vals = []
+
         for j in range(self.params["A_g_prime_length"]):
             
-            state_post_tech_pre_damage         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,
-                                                                             self.params["A_g_prime_list"][j], log_xi,  log_xi]] )
- 
-
-            v_j                    = self.v_post_tech_pre_damage_nn(state_post_tech_pre_damage)
-            v_j_vals.append( v_j )
-            v_diff_temp                        = v_j - v
-            g_j                           = tf.exp(-1.0/  np.exp(log_xi) * (v_j - v))
+            # state_post_tech_pre_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi, self.params["A_g_prime_list"][j]]] )
+            # state_post_tech_pre_damage        = tf.reshape(state_post_tech_pre_damage, (1,5))
             
-            g_js.append(g_j)
+            # v_j                           = self.v_post_tech_pre_damage_nn(state_post_tech_pre_damage)
+            # v_j_vals.append( v_j )
+
+            # g_j      = tf.exp(-1.0/  np.exp(log_xi) * (v_j - v))
+            # g_js.append(g_j)
 
 
+            if self.params["channel_type"] == "full":
+                state_post_tech_pre_damage         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,
+                                                                             self.params["A_g_prime_list"][j], log_xi,  log_xi]] )
+            elif self.params["channel_type"] == "capital":
+
+                state_post_tech_pre_damage         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,
+                                                                             self.params["A_g_prime_list"][j], log_xi,  log_xi_baseline]] )
+            elif self.params["channel_type"] == "climate":
+
+                state_post_tech_pre_damage         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,
+                                                                             self.params["A_g_prime_list"][j], log_xi_baseline,  log_xi]] )
+
+            else:
+
+                state_post_tech_pre_damage         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,
+                                                                             self.params["A_g_prime_list"][j], log_xi_baseline,  log_xi_baseline]] )
+
+
+            if self.params["channel_type"] == "full" or self.params["channel_type"] == "technology":
+
+
+                v_j                    = self.v_post_tech_pre_damage_nn(state_post_tech_pre_damage)
+                v_j_vals.append( v_j )
+                v_diff_temp                        = v_j - v
+                g_j                           = tf.exp(-1.0/  np.exp(log_xi) * (v_j - v))
+                
+                g_js.append(g_j)
+                
+            else:
+
+            
+                v_j                    = self.v_post_tech_pre_damage_nn(state_post_tech_pre_damage)
+                v_j_vals.append( v_j )
+                v_diff_temp                        = v_j - v
+                g_j                           = tf.exp(-1.0/  np.exp(log_xi_baseline) * (v_j - v))
+                
+                g_js.append(g_j)
+                
 
         g_js_list            = [g_js]
 
@@ -1615,7 +2007,7 @@ class model:
 
                 if self.params["channel_type"] == "full":
 
-                    state_pre_tech_post_damage    = tf.convert_to_tensor( [[ state_list[t][0,0], state_list[t][0,1], self.params['y_bar'], state_list[t][0,3], 
+                    state_pre_tech_post_damage    = tf.convert_to_tensor( [[ state_list[t][0,0], state_list[t][0,1], state_list[t][0,2], state_list[t][0,3], 
                         self.params["gamma_3_list"][k],  state_list[t][0,4],  state_list[t][0,5],  state_list[t][0,6]]] )
                     state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
                     
@@ -1790,13 +2182,12 @@ class model:
 
 
 
-        varrho =  self.params["varrho"]
- 
-        A_d = self.params['A_d']
-        A_g = self.params['A_g']
-        beta = self.params["beta_f"]
-        eta = self.params['eta']
-        
+        varrho = 1120
+        # gamma_3_length = 5
+        A_d = 0.12
+        A_g = 0.10
+        beta = 1.86 / 1000
+        eta = 0.17
         r_1         = 1.5
         r_2         = 2.5
         y_lower_bar = 1.5
@@ -2104,45 +2495,6 @@ class model:
         plt.close()
 
 
-        plt.figure()
-        plt.plot(
-            time_vec,
-            data_dict["distorted_dmg_jump_intensity"],
-            label=r"$\xi = {:.3f}$".format(np.exp(log_xi)),
-            color='tab:red',  # Using a different color for distinction
-            linewidth=2
-        )
-        plt.xlabel('Years')
-        plt.title("Distorted Intensity of a Damage Jump")
-        plt.ylim(0, max(data_dict["distorted_dmg_jump_intensity"]) * 1.1)  # Adjust y-limit based on data
-        plt.legend(loc='upper right')
-        plt.savefig(f"{export_folder}/DmgJumpIntensity_Comp_IMSI_2023.png")
-        np.savetxt(f"{export_folder}/DmgJumpIntensity.txt", data_dict["distorted_dmg_jump_intensity"])
-        plt.close()
-
-
-
-        # Plotting Distorted Intensity of a Technology Jump
-        plt.figure()
-        plt.plot(
-            time_vec,
-            data_dict["distorted_tech_jump_intensity"],
-            label=r"$\xi = {:.3f}$".format(np.exp(log_xi)),
-            color='tab:green',  # Using a different color for distinction
-            linewidth=2
-        )
-        plt.xlabel('Years')
-        plt.title("Distorted Intensity of a Technology Jump")
-        plt.ylim(0, max(data_dict["distorted_tech_jump_intensity"]) * 1.1)  # Adjust y-limit based on data
-        plt.legend(loc='upper right')
-        plt.savefig(f"{export_folder}/TechJumpIntensity_Comp_IMSI_2023.png")
-        np.savetxt(f"{export_folder}/TechJumpIntensity.txt", data_dict["distorted_tech_jump_intensity"])
-        plt.close()
-
-
-
-
-
         ## Plot bar chart
         baseline = np.ones(self.params["gamma_3_length"]) / self.params["gamma_3_length"]
         distorted = np.ones(self.params["gamma_3_length"]) / self.params["gamma_3_length"]
@@ -2167,20 +2519,20 @@ class model:
 
         ## Plot bar chart
         baseline = np.ones(self.params["A_g_prime_length"]) / self.params["A_g_prime_length"]
-        x1       =  np.array(self.params["A_g_prime_list"])
+        x1       = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"])
         distorted = np.ones(self.params["A_g_prime_length"]) / self.params["A_g_prime_length"]
         for i in range(self.params["A_g_prime_length"]):
             distorted[i] = data_dict['g_j_'+str(i)+'_simulation_norm'][-1]
 
-        # bin_edges = np.linspace(0.11, 0.14, 4)
+        bin_edges = np.linspace(0.12, 0.13, 4)
         print("Tech Models: {}"  .format(distorted))
-        plt.hist(x1, weights=baseline, label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey")#,bins=bin_edges)
-        plt.hist(x1, weights=distorted,  label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey")#,bins=bin_edges)
+        plt.hist(x1, weights=baseline, label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey",bins=bin_edges)
+        plt.hist(x1, weights=distorted,  label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey",bins=bin_edges)
         plt.title("Distorted Probability of Technology Models")
         plt.xlabel(r"$A'_g$")
         plt.legend()
         plt.xlim([self.params["A_g_prime_min"],self.params["A_g_prime_max"]])
-        plt.ylim([0, 1.0])
+        plt.ylim([0, 0.6])
         plt.savefig(export_folder + '/Tech_Dist_IMSI_2023.png')
         plt.close()
 
@@ -2714,7 +3066,7 @@ class model:
 
 
 
-        varrho = self.params["varrho"]
+        varrho = 1120
         # gamma_3_length = 5
         A_d = 0.12
         A_g = 0.10
@@ -3015,22 +3367,6 @@ class model:
         plt.close()
 
 
-        plt.figure()
-        plt.plot(
-            time_vec,
-            data_dict["distorted_dmg_jump_intensity"],
-            label=r"$\xi = {:.3f}$".format(np.exp(log_xi)),
-            color='tab:red',  # Using a different color for distinction
-            linewidth=2
-        )
-        plt.xlabel('Years')
-        plt.title("Distorted Intensity of a Damage Jump")
-        plt.ylim(0, max(data_dict["distorted_dmg_jump_intensity"]) * 1.1)  # Adjust y-limit based on data
-        plt.legend(loc='upper right')
-        plt.savefig(f"{export_folder}/DmgJumpIntensity_Comp_IMSI_2023.png")
-        np.savetxt(f"{export_folder}/DmgJumpIntensity.txt", data_dict["distorted_dmg_jump_intensity"])
-        plt.close()
-
 
         plt.figure()
         plt.plot(time_vec,data_dict["distorted_tech_jump_prob"], label = r"$\xi = {:.3f}$".format(np.exp(log_xi)), color = 'tab:blue', linewidth='2')
@@ -3040,23 +3376,6 @@ class model:
         plt.legend(loc='lower right')
         plt.savefig(export_folder + '/TechJumpProb_Comp_IMSI_2023.png')
         np.savetxt(export_folder +  "/TechJumpProb.txt", data_dict["distorted_tech_jump_prob"])         
-        plt.close()
-         
-        # Plotting Distorted Intensity of a Technology Jump
-        plt.figure()
-        plt.plot(
-            time_vec,
-            data_dict["distorted_tech_jump_intensity"],
-            label=r"$\xi = {:.3f}$".format(np.exp(log_xi)),
-            color='tab:green',  # Using a different color for distinction
-            linewidth=2
-        )
-        plt.xlabel('Years')
-        plt.title("Distorted Intensity of a Technology Jump")
-        plt.ylim(0, max(data_dict["distorted_tech_jump_intensity"]) * 1.1)  # Adjust y-limit based on data
-        plt.legend(loc='upper right')
-        plt.savefig(f"{export_folder}/TechJumpIntensity_Comp_IMSI_2023.png")
-        np.savetxt(f"{export_folder}/TechJumpIntensity.txt", data_dict["distorted_tech_jump_intensity"])
         plt.close()
 
 
