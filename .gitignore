@@ -5,5 +5,7 @@ __pycache__/
 model_original_baseline/
 backup/
 output/
+output_plot/
+output_replicate/
 result_save/
 model_results.json

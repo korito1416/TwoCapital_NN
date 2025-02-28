@@ -1,0 +1,2 @@
+model_checkpoint_path: "i_d_nn_checkpoint_post_tech_post_damage"
+all_model_checkpoint_paths: "i_d_nn_checkpoint_post_tech_post_damage"

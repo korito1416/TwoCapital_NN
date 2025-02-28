@@ -95,8 +95,8 @@ class model:
         ## Create tensors to store normalizing constants 
         consumption_guess =  ( np.exp(self.params["logK_max"]) + np.exp(self.params["logK_min"]) ) / 2 * 0.1 ## assume consuming 10% of capital
 
-        self.flow_pv_norm                          =  tf.ones(shape = (self.params['batch_size'],1) ) * self.params['delta'] * np.log(consumption_guess)
-        self.marginal_utility_of_consumption_norm  =  tf.ones(shape = (self.params['batch_size'],1) ) * self.params['delta'] / consumption_guess
+        self.flow_pv_norm                          =  tf.ones(shape = (self.params['batch_size'],1) ) # * self.params['delta'] * np.log(consumption_guess)
+        self.marginal_utility_of_consumption_norm  =  tf.ones(shape = (self.params['batch_size'],1) ) # * self.params['delta'] / consumption_guess
 
         ## Create neural networks
         self.v_nn    = FeedForwardSubNet(self.params['v_nn_config'])
@@ -1173,11 +1173,11 @@ class model:
                     loss_v_diff += -v_diff_j_vals[j] * tf.reshape( tf.cast( v_diff_j_vals[j] < 0.000000001, tf.float32 ),  [self.params["batch_size"], 1]) + 10e-4
                 loss_dv_dI_g = - dv_dI_g   * tf.reshape( tf.cast( dv_dI_g < 0, tf.float32 ),  [self.params["batch_size"], 1]) + 10e-4
 
-                return tf.sqrt(tf.reduce_mean(tf.square( (rhs - pv)  / self.flow_pv_norm  ))), -tf.reduce_mean(rhs  / self.flow_pv_norm ), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_c / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_g / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_d / self.marginal_utility_of_consumption_norm))),  tf.sqrt(tf.reduce_mean(tf.square(FOC_g / self.marginal_utility_of_consumption_norm))), \
-                    tf.sqrt(tf.reduce_mean(tf.square(FOC_d / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(FOC_I / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_i_I / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_v_diff / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dI_g / self.marginal_utility_of_consumption_norm)))
+                return tf.sqrt(tf.reduce_mean(tf.square( (rhs - pv)    ))), -tf.reduce_mean(rhs   ), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY ))), tf.sqrt(tf.reduce_mean(tf.square(loss_c ))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_g ))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_d ))),  tf.sqrt(tf.reduce_mean(tf.square(FOC_g ))), \
+                    tf.sqrt(tf.reduce_mean(tf.square(FOC_d ))), tf.sqrt(tf.reduce_mean(tf.square(FOC_I ))), tf.sqrt(tf.reduce_mean(tf.square(loss_i_I ))), tf.sqrt(tf.reduce_mean(tf.square(loss_v_diff ))), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dI_g )))
             else:
-                return tf.sqrt(tf.reduce_mean(tf.square((rhs - pv)  / self.flow_pv_norm ))), -tf.reduce_mean(rhs  / self.flow_pv_norm ), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_c / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_g / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_d / self.marginal_utility_of_consumption_norm))), tf.sqrt(tf.reduce_mean(tf.square(FOC_g / self.marginal_utility_of_consumption_norm))), \
-                    tf.sqrt(tf.reduce_mean(tf.square(FOC_d / self.marginal_utility_of_consumption_norm))) 
+                return tf.sqrt(tf.reduce_mean(tf.square((rhs - pv)  ))), -tf.reduce_mean(rhs  ), tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY ))), tf.sqrt(tf.reduce_mean(tf.square(loss_c ))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_g))), tf.sqrt(tf.reduce_mean(tf.square(loss_inside_log_i_d ))), tf.sqrt(tf.reduce_mean(tf.square(FOC_g))), \
+                    tf.sqrt(tf.reduce_mean(tf.square(FOC_d ))) 
 
     def grad(self, logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g = None, compute_control = False, training = True):
 
@@ -1327,8 +1327,8 @@ class model:
                 else:
                     rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d, marginal_utility_of_consumption_norm, FOC_g, FOC_d, y_test, h_y = self.pde_rhs(logK, R, Y, gamma_3, A_g_prime, log_xi, log_xi_baseline, log_I_g)
 
-                self.flow_pv_norm = (1.0 - self.params['norm_weight']) * self.flow_pv_norm + self.params['norm_weight'] * pv
-                self.marginal_utility_of_consumption_norm = (1.0 - self.params['norm_weight']) * self.marginal_utility_of_consumption_norm + self.params['norm_weight'] * marginal_utility_of_consumption_norm
+                # self.flow_pv_norm = (1.0 - self.params['norm_weight']) * self.flow_pv_norm + self.params['norm_weight'] * pv
+                # self.marginal_utility_of_consumption_norm = (1.0 - self.params['norm_weight']) * self.marginal_utility_of_consumption_norm + self.params['norm_weight'] * marginal_utility_of_consumption_norm
 
                 ## Store best neural networks
                 if (test_losses[0] < min_loss):
@@ -1872,7 +1872,7 @@ class model:
                                                                                                             #cap     # tempe  # tech    
                 # state_pre_tech_post_damage         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi,  log_xi,  log_xi,  init_I_g]] )
 
-                state_pre_tech_post_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, init_I_g,
+                state_pre_tech_post_damage    = tf.convert_to_tensor( [[ init_logK,  init_R, self.params['y_bar'], init_I_g,
                                                                          self.params["gamma_3_list"][k], log_xi, log_xi, log_xi]] )
 
                 state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
@@ -2007,7 +2007,7 @@ class model:
 
                 if self.params["channel_type"] == "full":
 
-                    state_pre_tech_post_damage    = tf.convert_to_tensor( [[ state_list[t][0,0], state_list[t][0,1], state_list[t][0,2], state_list[t][0,3], 
+                    state_pre_tech_post_damage    = tf.convert_to_tensor( [[ state_list[t][0,0], state_list[t][0,1], self.params['y_bar'], state_list[t][0,3], 
                         self.params["gamma_3_list"][k],  state_list[t][0,4],  state_list[t][0,5],  state_list[t][0,6]]] )
                     state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
                     
@@ -2182,12 +2182,12 @@ class model:
 
 
 
-        varrho = 1120
-        # gamma_3_length = 5
-        A_d = 0.12
-        A_g = 0.10
-        beta = 1.86 / 1000
-        eta = 0.17
+        varrho =  self.params["varrho"]
+ 
+        A_d = self.params['A_d']
+        A_g = self.params['A_g']
+        beta = self.params["beta_f"]
+        eta = self.params['eta']
         r_1         = 1.5
         r_2         = 2.5
         y_lower_bar = 1.5
@@ -2498,7 +2498,7 @@ class model:
         ## Plot bar chart
         baseline = np.ones(self.params["gamma_3_length"]) / self.params["gamma_3_length"]
         distorted = np.ones(self.params["gamma_3_length"]) / self.params["gamma_3_length"]
-        bin_edges = np.linspace(0, 1/3, 6)
+        bin_edges = np.linspace(0, 1/3, 21)
         x1       = np.linspace(0,1/3,self.params["gamma_3_length"])
         for i in range(self.params["gamma_3_length"]):
             distorted[i] = data_dict['f_m_'+str(i)+'_simulation_norm'][-1] 
@@ -2511,7 +2511,7 @@ class model:
         plt.xlabel(r"$\gamma_3$")
         plt.legend()
         plt.xlim([0,1/3])
-        plt.ylim([0, 0.6])
+        plt.ylim([0, 0.1])
         plt.savefig(export_folder + '/Dmg_Dist_IMSI_2023.png')
         plt.close()
 

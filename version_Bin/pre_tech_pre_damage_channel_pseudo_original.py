@@ -164,6 +164,9 @@ test_model.export_parameters()
 test_model.train()
 # test_model.analyze()
 
+log_xi_list = [float(np.log(0.075)),float(np.log(0.1)), float(np.log(0.3)), float(5.0) ]
+
+
 if channel_type == "baseline":
     for log_xi_baseline_idx in range(len(log_xi_baseline_list)):
     # test_model.simulate_path(60, 1.0 / 12.0, log_xi_list[log_xi_idx], export_folder + "/output/pre_damage_pre_tech/log_xi_idx_" + str(log_xi_idx))

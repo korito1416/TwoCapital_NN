@@ -6,7 +6,7 @@
 #SBATCH --partition=caslake
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=100G
+#SBATCH --mem=21G
 
 # Load the default version of GNU parallel.
 module load parallel
@@ -17,37 +17,16 @@ module load cuda/11.2
 module load python/anaconda-2021.05
 
 # prefix="/scratch/midway3/pengyu"
-prefix="/project/lhansen/Cap_damage/TwoCapital_NN/output"
-
+prefix="/project/lhansen/Cap_NN_oldVersion/TwoCapital_NN/output"
+pretrain_folder="/project/lhansen/Cap_NN_oldVersion/TwoCapital_NN/Pretrained_Model"
 
  
-# channel_type="full"
-# channel_type="baseline"
-# channel_type="capital"
-# channel_type="technology"
-# channel_type="damage"
-# channel_type="climate"
 channel_type=$1
 range_type=$2
 batch_size=$3
 SLURM_NTASKS=$4
 echo "${channel_type}, ${range_type}, ${batch_size}"
 
- 
-# A_g_prime_min=0.10
-# A_g_prime_max=0.20
-# foldername="model_longer_${channel_type}_widerange"
-
-# A_g_prime_min=0.14
-# A_g_prime_max=0.16
-# foldername="model_longer_${channel_type}_shortrange"
- 
-
-
-# batch_size="128"
-# batch_size="256"
-# batch_size="512"
-# batch_size="1024"
 
 num_neurons="32"
 
@@ -57,6 +36,8 @@ log_xi_baseline_min="-3.0"
 log_xi_baseline_max="5.0"
 num_iterations1="2000000"
 num_iterations2="2000000"
+
+
 
 # A_g_prime_num="0.15"
 logging_frequency="1000"
@@ -85,13 +66,11 @@ else
 
 echo "range_type=${range_type}"
 
-# A_g_prime_min=0.19
-# A_g_prime_max=0.22
 A_g_prime_min=0.12
 A_g_prime_max=0.13
 
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Whether_loss_Delta_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
+foldername="Replicate_7_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
 
 fi
 
@@ -104,12 +83,18 @@ pre_tech_post_damage_export_folder="${job_name}/pre_tech_post_damage"
 post_tech_pre_damage_export_folder="${job_name}/post_tech_pre_damage"
 post_tech_post_damage_export_folder="${job_name}/post_tech_post_damage"
 
-pretrained_pre_tech_pre_damage_export_folder="None"
-# pretrained_pre_tech_pre_damage_export_folder="${job_name}/pre_damage_pre_tech"
-pretrained_pre_tech_post_damage_export_folder="None"
-pretrained_post_tech_pre_damage_export_folder="None"
-pretrained_post_tech_post_damage_export_folder="None"
+# pretrained_pre_tech_pre_damage_export_folder="None"
+# # pretrained_pre_tech_pre_damage_export_folder="${job_name}/pre_damage_pre_tech"
+# pretrained_pre_tech_post_damage_export_folder="None"
+# pretrained_post_tech_pre_damage_export_folder="None"
+# pretrained_post_tech_post_damage_export_folder="None"
 
+
+# pretrain_folder="/project/lhansen/Capital_NN/TwoCapital_NN/output/Four_distortion8_domain_full_shortrange_128_neurons_32_Agmin_0.12_Agmax_0.16_logxi_-3.0_logxibaseline_-3.0_num_iterations2000000"
+pretrained_pre_tech_pre_damage_export_folder="${pretrain_folder}/pre_tech_pre_damage"
+pretrained_pre_tech_post_damage_export_folder="${pretrain_folder}/pre_tech_post_damage"
+pretrained_post_tech_pre_damage_export_folder="${pretrain_folder}/post_tech_pre_damage"
+pretrained_post_tech_post_damage_export_folder="${pretrain_folder}/post_tech_post_damage"
 
 
 

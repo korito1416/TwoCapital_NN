@@ -1,7 +1,7 @@
 # TwoCapital_NN
 
 
-In each bash file(run_bin.sh,parallel_Agprime_PseudoState.sbatch,run_joe.sh), please update server settings and output path("prefix")
+In each bash file(run_bin.sh,parallel_Agprime_PseudoState.sbatch,run_joe.sh), please update server settings, output path("prefix") and pretrained folder
 
 
 And you need to put "model_results.json" into the folder.
