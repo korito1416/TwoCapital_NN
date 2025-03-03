@@ -17,9 +17,9 @@ module load cuda/11.2
 module load python/anaconda-2021.05
 
 # prefix="/scratch/midway3/pengyu"
-prefix="/project/lhansen/Cap_NN_oldVersion/TwoCapital_NN/output"
-pretrain_folder="/project/lhansen/Cap_NN_oldVersion/TwoCapital_NN/Pretrained_Model"
-
+prefix="/project/lhansen/Cap_NN_oldVersion/New_Econ_Parameters/output"
+pretrain_folder="/project/lhansen/Cap_NN_oldVersion/New_Econ_Parameters/Pretrained_Model"
+ 
  
 channel_type=$1
 range_type=$2
@@ -36,12 +36,19 @@ log_xi_baseline_min="-3.0"
 log_xi_baseline_max="5.0"
 num_iterations1="2000000"
 num_iterations2="2000000"
-
+num_iterations1="1"
+num_iterations2="1"
 
 
 # A_g_prime_num="0.15"
 logging_frequency="1000"
+learning_rates="10e-4,10e-4,10e-4,10e-4"
+# learning_rates="40e-4,40e-4,40e-4,40e-4"
 learning_rates="10e-5,10e-5,10e-5,10e-5"
+# learning_rates="40e-5,40e-5,40e-5,40e-5"
+# learning_rates="10e-6,10e-6,10e-6,10e-6"
+# learning_rates="40e-6,40e-6,40e-6,40e-6"
+ 
 hidden_layer_activations="swish,tanh,tanh,softplus"
 output_layer_activations="softplus,custom,custom,softplus"
 num_hidden_layers="4"
@@ -70,7 +77,8 @@ A_g_prime_min=0.12
 A_g_prime_max=0.13
 
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Replicate_7_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
+foldername="NewParameters_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
+foldername="Plot_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
 
 fi
 
@@ -91,6 +99,8 @@ post_tech_post_damage_export_folder="${job_name}/post_tech_post_damage"
 
 
 # pretrain_folder="/project/lhansen/Capital_NN/TwoCapital_NN/output/Four_distortion8_domain_full_shortrange_128_neurons_32_Agmin_0.12_Agmax_0.16_logxi_-3.0_logxibaseline_-3.0_num_iterations2000000"
+pretrain_folder="${prefix}/NewParameters_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations2000000"
+
 pretrained_pre_tech_pre_damage_export_folder="${pretrain_folder}/pre_tech_pre_damage"
 pretrained_pre_tech_post_damage_export_folder="${pretrain_folder}/pre_tech_post_damage"
 pretrained_post_tech_pre_damage_export_folder="${pretrain_folder}/post_tech_pre_damage"
