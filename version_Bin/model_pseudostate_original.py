@@ -89,8 +89,14 @@ class model:
         print("Tensorboard boolean =", self.params['tensorboard'] )
 
  
-        self.params["A_g_prime_list"]     = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"]).tolist()
+        # self.params["A_g_prime_list"]     = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"]).tolist()
+        self.params["A_g_prime_list"]     = [0.13,0.139,0.147]
         self.params["gamma_3_list"]       = np.linspace(self.params["gamma_3_min"], self.params["gamma_3_max"], self.params["gamma_3_length"]).tolist()
+        
+        self.params["eta" ] = 0.291
+        
+        self.params["A_d"] = 0.13
+        params["A_g"]     = 0.1086
 
         ## Create tensors to store normalizing constants 
         consumption_guess =  ( np.exp(self.params["logK_max"]) + np.exp(self.params["logK_min"]) ) / 2 * 0.1 ## assume consuming 10% of capital
@@ -455,7 +461,7 @@ class model:
 
                     X_pre_tech_post_damage = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], log_I_g, 
                     tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], log_xi, log_xi, log_xi], 1)
-                    v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage)
+                    v_m                    = self.v_pre_tech_post_damage_nn(X_pre_tech_post_damage) - self.params["gamma_1"] * Y - 0.5* self.params["gamma_2"] *  Y *  Y
                     v_m_vals.append( v_m )
 
                     f_m       = tf.exp(-1.0/ xi * (v_m - v))
@@ -606,8 +612,7 @@ class model:
         ## Compute h distortion: capital, climate, technology
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="climate": 
 
-            h_y                             =   - 1.0 /  xi  * (( dv_dY  - (self.params['gamma_1'] \
-            + self.params['gamma_2'] * Y   )   ) *  self.params['varsigma'] * \
+            h_y                             =   - 1.0 /  xi  * (( dv_dY   ) *  self.params['varsigma'] * \
             self.params['eta'] * self.params['A_d'] * (1-R) * K   )  
         else: 
 
@@ -685,9 +690,11 @@ class model:
         
         v_y_term       = beta_f * (self.params["eta"] *  self.params["A_d"] * (1-R) * K)
         v_yy_term      = 0.5 * tf.pow( self.params["varsigma"],2) * tf.pow(self.params["eta"] * self.params["A_d"] * (1-R) * K, 2)
-        last_term      = -(( self.params["gamma_1"] +  self.params["gamma_2"] * Y  + gamma_3 * (Y - self.params["y_bar"])  ) * v_y_term + \
-        (self.params["gamma_2"]+ gamma_3  ) * v_yy_term)
-
+        ### Damage Function: for post-damage HJB we solve \tilde{y}=0
+        if "post_damage" in self.params["model_type"]:
+            last_term = -self.params["delta"] * (   self.params["gamma_1"] * (Y-self.params["y_bar"]) + 0.5* self.params["gamma_2"] * Y**2  +  0.5*   gamma_3 * (Y-self.params["y_bar"])**2   -0.5*  self.params["gamma_2"] *self.params["y_bar"]**2  )
+        else:
+            last_term = -self.params["delta"] *( self.params["gamma_1"] + 0.5* self.params["gamma_2"] * Y )* Y 
         if self.params["n_dims"] == 4:
 
             v_I_g_term     = - self.params["zeta"] + self.params["psi_0"] * tf.exp(-self.params["psi_1"] * i_I_capped)  * tf.exp( self.params["psi_1"] * (logK -  log_I_g) ) - 0.5 * tf.pow(self.params["sigma_I"], 2)
@@ -786,7 +793,7 @@ class model:
                     X_post_tech_post_damage                   = tf.concat([logK, R, tf.ones(tf.shape(Y)) * self.params["y_bar"], 
                                                                             tf.ones(tf.shape(Y)) * self.params["gamma_3_list"][k], A_g_prime, log_xi, log_xi], 1)
     
-                    v_m                    =  self.v_post_tech_post_damage_nn(X_post_tech_post_damage) 
+                    v_m                    =  self.v_post_tech_post_damage_nn(X_post_tech_post_damage) - self.params["gamma_1"] * Y - 0.5* self.params["gamma_2"] *  Y *  Y
                     v_m_vals.append( v_m )
 
                     f_m       = tf.exp(-1.0/ xi * (v_m - v))
@@ -1788,8 +1795,8 @@ class model:
         pathlib.Path(export_folder).mkdir(parents=True, exist_ok=True) 
         
         ## Initial state 
-        init_logK     = tf.math.log(739.0)
-        init_R        = 0.5  
+        init_logK     = tf.math.log(880.0)
+        init_R        = 0.7
         init_I_g      = tf.math.log(11.2)
         init_Y        = 1.1
 
@@ -1876,7 +1883,7 @@ class model:
                                                                          self.params["gamma_3_list"][k], log_xi, log_xi, log_xi]] )
 
                 state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
-                v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)
+                v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)- self.params["gamma_1"] * init_Y - 0.5* self.params["gamma_2"] *  init_Y *  init_Y
                 v_m_vals.append( v_m )
                 f_m       = tf.exp(-1.0/ np.exp(log_xi) * (v_m - v))
                 f_ms.append(f_m)
@@ -2011,7 +2018,7 @@ class model:
                         self.params["gamma_3_list"][k],  state_list[t][0,4],  state_list[t][0,5],  state_list[t][0,6]]] )
                     state_pre_tech_post_damage        = tf.reshape(state_pre_tech_post_damage, (1,8))
                     
-                    v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)
+                    v_m                           = self.v_pre_tech_post_damage_nn(state_pre_tech_post_damage)- self.params["gamma_1"] * state_list[t][0,2] - 0.5* self.params["gamma_2"] * state_list[t][0,2] *  state_list[t][0,2]
                     f_m       = tf.exp(-1.0/  np.exp(log_xi) * (v_m - v))
                     f_ms.append(f_m)
                     
@@ -2147,13 +2154,11 @@ class model:
 
 
         if self.params["channel_type"]=="full" or self.params["channel_type"]=="climate": 
-            h_y      = -1.0 / tf.exp(log_xi) * ((dv_dY.numpy() - \
-            (self.params["gamma_1"] + self.params["gamma_2"] * Y)) * self.params["varsigma"] * \
+            h_y      = -1.0 / tf.exp(log_xi) * ((dv_dY.numpy()  ) * self.params["varsigma"] * \
                     self.params["eta"] * self.params["A_d"] * (1 - R) * K)
         else: 
 
-            h_y      = -1.0 / tf.exp(log_xi_baseline) * ((dv_dY.numpy() - \
-            (self.params["gamma_1"] + self.params["gamma_2"] * Y)) * self.params["varsigma"] * \
+            h_y      = -1.0 / tf.exp(log_xi_baseline) * ((dv_dY.numpy() ) * self.params["varsigma"] * \
                     self.params["eta"] * self.params["A_d"] * (1 - R) * K)
 
 
@@ -2519,22 +2524,23 @@ class model:
 
         ## Plot bar chart
         baseline = np.ones(self.params["A_g_prime_length"]) / self.params["A_g_prime_length"]
-        x1       = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"])
+        x1       =  np.array(self.params["A_g_prime_list"])
         distorted = np.ones(self.params["A_g_prime_length"]) / self.params["A_g_prime_length"]
         for i in range(self.params["A_g_prime_length"]):
             distorted[i] = data_dict['g_j_'+str(i)+'_simulation_norm'][-1]
 
-        bin_edges = np.linspace(0.12, 0.13, 4)
+        # bin_edges = np.linspace(0.11, 0.14, 4)
         print("Tech Models: {}"  .format(distorted))
-        plt.hist(x1, weights=baseline, label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey",bins=bin_edges)
-        plt.hist(x1, weights=distorted,  label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey",bins=bin_edges)
+        plt.hist(x1, weights=baseline, label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey")#,bins=bin_edges)
+        plt.hist(x1, weights=distorted,  label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey")#,bins=bin_edges)
         plt.title("Distorted Probability of Technology Models")
         plt.xlabel(r"$A'_g$")
         plt.legend()
-        plt.xlim([self.params["A_g_prime_min"],self.params["A_g_prime_max"]])
-        plt.ylim([0, 0.6])
+        plt.xlim([x1[0],x1[-1]])
+        plt.ylim([0, 1.0])
         plt.savefig(export_folder + '/Tech_Dist_IMSI_2023.png')
         plt.close()
+
 
 
         pi_c_o = np.ones(len(theta_ell)) / len(theta_ell)
