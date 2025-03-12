@@ -3,7 +3,7 @@
 
 #SBATCH --time=0-36:00:00
 #SBATCH --account=pi-lhansen
-#SBATCH --partition=caslake
+#SBATCH --partition=amd
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=21G
@@ -36,19 +36,22 @@ log_xi_baseline_min="-3.0"
 log_xi_baseline_max="5.0"
 num_iterations1="2000000"
 num_iterations2="2000000"
-num_iterations1="1"
-num_iterations2="1"
-
+# num_iterations1="1"
+# num_iterations2="1"
+num_iterations1="1000000"
+num_iterations2="1000000"
 
 # A_g_prime_num="0.15"
 logging_frequency="1000"
 learning_rates="10e-4,10e-4,10e-4,10e-4"
-# learning_rates="40e-4,40e-4,40e-4,40e-4"
-learning_rates="10e-5,10e-5,10e-5,10e-5"
+learning_rates="40e-4,40e-4,40e-4,40e-4"
+# learning_rates="10e-5,10e-5,10e-5,10e-5"
 # learning_rates="40e-5,40e-5,40e-5,40e-5"
 # learning_rates="10e-6,10e-6,10e-6,10e-6"
 # learning_rates="40e-6,40e-6,40e-6,40e-6"
- 
+# learning_rates="10e-7,10e-7,10e-7,10e-7"
+# learning_rates="40e-7,40e-7,40e-7,40e-7"
+
 hidden_layer_activations="swish,tanh,tanh,softplus"
 output_layer_activations="softplus,custom,custom,softplus"
 num_hidden_layers="4"
@@ -78,7 +81,7 @@ A_g_prime_max=0.13
 
 # foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
 foldername="NewParameters_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
-foldername="Plot_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
+foldername="Retrain_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations${num_iterations1}"
 
 fi
 
@@ -99,7 +102,7 @@ post_tech_post_damage_export_folder="${job_name}/post_tech_post_damage"
 
 
 # pretrain_folder="/project/lhansen/Capital_NN/TwoCapital_NN/output/Four_distortion8_domain_full_shortrange_128_neurons_32_Agmin_0.12_Agmax_0.16_logxi_-3.0_logxibaseline_-3.0_num_iterations2000000"
-pretrain_folder="${prefix}/NewParameters_${delta}_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_logxi_${log_xi_min}_logximax_${log_xi_max}_num_iterations2000000"
+pretrain_folder="/project/lhansen/Cap_NN_oldVersion/New_Econ_Parameters/output/NewParameters_0.01_LR_piecewiseconstant_10e-5,10e-5,10e-5,10e-5_128_neurons_32_#HiddenLayer_4_logxi_-3.0_logximax_5.0_num_iterations2000000"
 
 pretrained_pre_tech_pre_damage_export_folder="${pretrain_folder}/pre_tech_pre_damage"
 pretrained_pre_tech_post_damage_export_folder="${pretrain_folder}/pre_tech_post_damage"

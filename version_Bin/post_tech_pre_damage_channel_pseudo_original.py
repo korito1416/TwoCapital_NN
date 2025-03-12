@@ -109,8 +109,8 @@ if params["learning_rate_schedule_type"] == "None":
     lr_schedulers = learning_rates
     params["optimizers"] = [tf.keras.optimizers.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
 elif params["learning_rate_schedule_type"] == "piecewiseconstant":
-    boundaries            = [int(round(x)) for x in np.linspace(0,num_iterations,5)][1:-1]
-    values_list           = [[learning_rate / np.power(2,x) for x in range(len(boundaries)+1)] for learning_rate in learning_rates]
+    boundaries            = [int(round(x)) for x in np.linspace(0,num_iterations,8)][1:-1]
+    values_list           = [[learning_rate / np.power(4,x) for x in range(len(boundaries)+1)] for learning_rate in learning_rates]
     lr_schedulers         = [ tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values) for values in values_list]
     params["optimizers"] = [tf.keras.optimizers.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
 elif params["learning_rate_schedule_type"] == "sgd+piecewiseconstant":
