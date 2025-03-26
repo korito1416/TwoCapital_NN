@@ -1,0 +1,7 @@
+job-outs/
+bash/
+__pycache__/
+.ipynb_checkpoints/
+output/
+
+ 

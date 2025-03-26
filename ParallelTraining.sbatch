@@ -1,13 +1,12 @@
 #!/bin/sh
 
 
-
 #SBATCH --time=0-36:00:00
 #SBATCH --account=pi-lhansen
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
-#SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=32G  # NOTE DO NOT USE THE --mem= OPTION
+#SBATCH --partition=caslake
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=15G
 
 # Load the default version of GNU parallel.
 module load parallel
@@ -17,86 +16,39 @@ module unload python
 module load cuda/11.2
 module load python/anaconda-2021.05
 
+batch_size=$1
+SLURM_NTASKS=$2 
+ 
+num_neurons="32"
+ 
+num_iterations1="2000000"
+num_iterations2="2000000"
+ 
+num_iterations1="200000"
+num_iterations2="200000"
 
-# channel_type="full"
-# channel_type="baseline"
-# channel_type="capital"
-# channel_type="technology"
-# channel_type="damage"
-# channel_type="climate"
-channel_type=$1
-range_type=$2
-batch_size=$3
-
-echo "${channel_type}, ${range_type}, ${batch_size}"
-
-prefix="/scratch/midway3/bincheng"
-
-
-
-# A_g_prime_min=0.10
-# A_g_prime_max=0.20
-# foldername="model_longer_${channel_type}_widerange"
-
-# A_g_prime_min=0.14
-# A_g_prime_max=0.16
-# foldername="model_longer_${channel_type}_shortrange"
-
-
-
-# if [ "${range_type}" -eq 1 ]; then
-
-# echo "range_type=${range_type}"
-# A_g_prime_min=0.10
-# A_g_prime_max=0.20
-# foldername="model_1m2m_${channel_type}_widerange_512"
-
-# else
-
-# echo "range_type=${range_type}"
-
-# A_g_prime_min=0.14
-# A_g_prime_max=0.16
-# foldername="model_1m2m_${channel_type}_shortrange_512"
-
-# fi
+# A_g_prime_num="0.15"
+logging_frequency="1000"
+learning_rates="10e-5,10e-5,10e-5,10e-5"
+# learning_rates="40e-7,40e-7,40e-7,40e-7"
+# learning_rates="10e-4,10e-4,10e-4,10e-4"
+# learning_rates="10e-3,10e-3,10e-3,10e-3"
+# learning_rates="10e-7,10e-7,10e-7,10e-7"
+# learning_rates="10e-8,10e-8,10e-8,10e-8"
+hidden_layer_activations="swish,tanh,tanh,softplus"
+output_layer_activations="softplus,custom,custom,softplus"
+# output_layer_activations="softplus,softplus,softplus,softplus"
+# output_layer_activations="softplus,tanh,tanh,softplus"
+num_hidden_layers="4"
+learning_rate_schedule_type="piecewiseconstant"
+# learning_rate_schedule_type="None"
+tensorboard='True'
 
 
-
-# batch_size="128"
-# batch_size="256"
-# batch_size="512"
-# batch_size="1024"
-
-# num_neurons="32"
-# num_neurons="48"
-num_neurons="64"
+prefix="/project/lhansen/Cap_damage/FourStates_NN/output"
+foldername="WhyNotConverge_LR_${learning_rate_schedule_type}_${learning_rates}_num_iterations${num_iterations1}_output_layer_activations_${output_layer_activations}"
 
 
-if [ "${range_type}" -eq 1 ]; then
-
-echo "range_type=${range_type}"
-A_g_prime_min=0.10
-A_g_prime_max=0.20
-# foldername="Pseudo_model_1m2m_${channel_type}_widerange_${batch_size}"
-foldername="Pseudo_model_1m2m_${channel_type}_widerange_${batch_size}_neurons_${num_neurons}"
-
-else
-
-echo "range_type=${range_type}"
-
-A_g_prime_min=0.14
-A_g_prime_max=0.16
-# foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}"
-foldername="Pseudo_model_1m2m_${channel_type}_shortrange_${batch_size}_neurons_${num_neurons}"
-
-fi
-
-
-
-
-
-# foldername="model_test_${channel_type}_range_[$A_g_prime_min,$A_g_prime_max]"
 
 job_name="${prefix}/${foldername}"
 jobout_name="${foldername}"
@@ -111,49 +63,14 @@ pretrained_pre_tech_post_damage_export_folder="None"
 pretrained_post_tech_pre_damage_export_folder="None"
 pretrained_post_tech_post_damage_export_folder="None"
 
-log_xi_min="-3.0"
-log_xi_max="-1.5"
 
-log_xi_baseline_min="10.2"
-log_xi_baseline_max="10.3"
+# pretrain_folder="/project/lhansen/Cap_damage/TwoCapital_NN/output/Z_00.7_Ad_0.13_Ag_0.1086_AgPrime_0.130,0.139,0.147_eta_0.291_LR_piecewiseconstant_10e-5,10e-5,10e-5,10e-5_num_iterations2000000"
+# # pretrain_folder="/project/lhansen/Cap_damage/TwoCapital_NN/output/A_g_prime_3_Delta_0.01_LR_piecewiseconstant_10e-5,10e-5,10e-5,10e-5_128_neurons_32_#HiddenLayer_4_logxi_-3.0_logximax_5.0_num_iterations600000"
+# pretrained_pre_tech_pre_damage_export_folder="${pretrain_folder}/pre_tech_pre_damage"
+# pretrained_pre_tech_post_damage_export_folder="${pretrain_folder}/pre_tech_post_damage"
+# pretrained_post_tech_pre_damage_export_folder="${pretrain_folder}/post_tech_pre_damage"
+# pretrained_post_tech_post_damage_export_folder="${pretrain_folder}/post_tech_post_damage"
 
-# batch_size="32"
-# batch_size="128"
-# batch_size="256"
-
-
-# num_iterations="2000000"
-# num_iterations="1000000"
-# num_iterations="750000"
-
-
-# num_iterations1="1000"
-num_iterations1="500000"
-# num_iterations1="2000000"
-
-
-
-
-
-num_iterations2="1000000"
-# num_iterations2="1000"
-# num_iterations2="3000000"
-# A_g_prime_num="0.15"
-logging_frequency="1000"
-learning_rates="10e-5,10e-5,10e-5,10e-5"
-hidden_layer_activations="swish,tanh,tanh,softplus"
-output_layer_activations="None,custom,custom,softplus"
-num_hidden_layers="4"
-
-
-
-
-
-learning_rate_schedule_type="None"
-delta="0.025"
-tensorboard='True'
-A_g_prime_length=10
-gamma_3_length=10
 
 
 
@@ -184,7 +101,7 @@ echo "\$SLURM_JOB_NAME"
 echo "Program starts \$(date)"
 start_time=\$(date +%s)
 
-python post_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+python Model/post_tech_post_damage.py $job_name $batch_size $num_iterations1  $pretrained_post_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $foldername 
 
 echo "Program ends \$(date)"
 end_time=\$(date +%s)
@@ -211,10 +128,10 @@ start_time=\$(date +%s)
 
 if [ "\${1}" -eq 0 ]; then
     echo "pre_tech_post_damage_channel_original"
-    python pre_tech_post_damage_channel_pseudo_original.py $job_name $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_pre_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+    python Model/pre_tech_post_damage.py $job_name  $batch_size $num_iterations1  $pretrained_pre_tech_post_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type    $foldername  
 else
     echo "post_tech_pre_damage_channel_original"
-    python post_tech_pre_damage_channel_pseudo_original.py $job_name $pre_tech_post_damage_export_folder $log_xi_min $log_xi_max $batch_size $num_iterations1  $pretrained_post_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+    python Model/post_tech_pre_damage.py $job_name $pre_tech_post_damage_export_folder  $batch_size $num_iterations1  $pretrained_post_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type   $foldername 
 fi
 
 echo "Program ends \$(date)"
@@ -240,7 +157,7 @@ echo "Program starts \$(date)"
 start_time=\$(date +%s)
 
 echo "pre_tech_pre_damage"
-python pre_tech_pre_damage_channel_pseudo_original.py $job_name $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder -10 $log_xi_min $log_xi_max $batch_size $num_iterations2  $pretrained_pre_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $delta $tensorboard  $foldername $log_xi_baseline_min $log_xi_baseline_max $channel_type $A_g_prime_min $A_g_prime_max $A_g_prime_length $gamma_3_length
+python Model/pre_tech_pre_damage.py $job_name $post_tech_pre_damage_export_folder $pre_tech_post_damage_export_folder  $batch_size $num_iterations2  $pretrained_pre_tech_pre_damage_export_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $foldername 
 
 
 
@@ -257,10 +174,11 @@ EOF
 
 
 
-
-
 # When running a large number of tasks simultaneously, it may be necessary to increase the user process limit.
 ulimit -u 10000
+
+
+
 
 # This specifies the options used to run srun. The "-N1 -n1" options are used to allocate a single core to each task.
 srun="srun --exclusive -N1 -n1"
