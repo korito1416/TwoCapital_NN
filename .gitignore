@@ -1,5 +1,6 @@
 job-outs/
 bash/
+Simulation/
 __pycache__/
 .ipynb_checkpoints/
 model_original_baseline/

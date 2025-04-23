@@ -89,9 +89,114 @@ class model:
         print("Tensorboard boolean =", self.params['tensorboard'] )
 
  
-        self.params["A_g_prime_list"]     = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"]).tolist()
+        # self.params["A_g_prime_list"]     = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"]).tolist()
+        self.params["A_g_prime_list"]     = [0.13,0.139,0.147]
+                
+        self.params["eta" ] = 0.291
+        
+        self.params["A_d"] = 0.13
+        self.params["A_g"]     = 0.1086
+        
+        
+        self.params["delta"] =  0.01
+        
+        self.params["alpha_d"] =   -0.035
+        self.params["alpha_g"] =  -0.035   
+        
+        self.params["sigma_d"] =  0.016 
+        self.params["sigma_g"] =  0.016 
+        
+        
+        self.params["gamma_1"] =  0.00017675
+        self.params["gamma_2"] =  2 * 0.0022 
+        # self.params["gamma_3_idx"] =  0
+        
+        self.params["y_bar"] = 2.0
+        self.params["beta_f"] = 1.86 / 1000
+        
+        self.params["varsigma"] = 1.2 * 1.86 / 1000
+        
+        self.params["phi_d"] =  16.7
+        self.params["phi_g"] =  16.7
+         
+        self.params ["Gamma"] = 0.06 
+        
+        self.params["r_1"] =  1.5
+        self.params["r_2"] =  2.5
+        self.params["y_lower_bar"] =  1.5
+        
+        self.params["norm_weight"] =  0.9
+        
+         
+         
+         
+        self.params["zeta"]            = 0.0
+        self.params["sigma_I"]         = 0.0078
+        self.params["varrho"]          = 1120
+        self.params["log_I_g_min"]     = 1.0
+        self.params["log_I_g_max"]     = 6.0
+        self.params["psi_1"]           = 0.5
+        self.params["psi_0"]           = 0.10583 
+         
+         
+        
+        
+        self.params["R_min"]  = 0.01
+        self.params["R_max"]  =  0.99
+        self.params["logK_min"]  = 4.0
+        self.params["logK_max"]  =  7.0       
+        self.params["Y_min"]  = 10e-3
+        self.params["Y_max"]  =  4.0
+        self.params["log_I_g_min"]  = 1.0
+        self.params["log_I_g_max"]  = 6.0
+        
+        self.params["gamma_3_min"]  = 0.0
+        self.params["gamma_3_max"]  = 1.0/3.0
+        
+        self.params["gamma_3_length"] = 20
+         
         self.params["gamma_3_list"]       = np.linspace(self.params["gamma_3_min"], self.params["gamma_3_max"], self.params["gamma_3_length"]).tolist()
+         
+        self.params["A_g_prime_min"] = self.params["A_g_prime_list"][0]
+        self.params["A_g_prime_max"] = self.params["A_g_prime_list"][-1]
+        self.params["A_g_prime_length"] = len( self.params["A_g_prime_list"])
+       
+        self.params["log_xi_min"] = -3.0
+        self.params["log_xi_max"] = 5.0
+        self.params["log_xi_baseline_min"] = -3.0
+        self.params["log_xi_baseline_max"] = 5.0
+  
+  
+  
+        ###########################
+        #### Optimizer Settings
+        ###########################
+        learning_rates = self.params["learning_rates"]
+        num_iterations = self.params["num_iterations"]
+        if self.params["learning_rate_schedule_type"] == "None":
+            lr_schedulers = learning_rates
+            self.params["optimizers"] = [tf.keras.optimizers.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
+        elif self.params["learning_rate_schedule_type"] == "piecewiseconstant":
+            boundaries            = [int(round(x)) for x in np.linspace(0,num_iterations,8)][1:-1]
+            values_list           = [[learning_rate / np.power(4,x) for x in range(len(boundaries)+1)] for learning_rate in learning_rates]
+            lr_schedulers         = [ tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values) for values in values_list]
+            self.params["optimizers"] = [tf.keras.optimizers.Adam( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
+        elif self.params["learning_rate_schedule_type"] == "sgd+piecewiseconstant":
+            boundaries            = [int(round(x)) for x in np.linspace(0,num_iterations,5)][1:-1]
+            values_list           = [[learning_rate / np.power(2,x) for x in range(len(boundaries)+1)] for learning_rate in learning_rates]
+            lr_schedulers         = [ tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values) for values in values_list]
+            self.params["optimizers"] = [tf.keras.optimizers.legacy.SGD( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
+        elif self.params["learning_rate_schedule_type"] == "sgd":
+            lr_schedulers = learning_rates
+            self.params["optimizers"] = [tf.keras.optimizers.legacy.SGD( learning_rate = lr_scheduler) for lr_scheduler in lr_schedulers]
 
+  
+  
+  
+  
+        ##########################
+        ##### Scalers
+        #########################
         ## Create tensors to store normalizing constants 
         consumption_guess =  ( np.exp(self.params["logK_max"]) + np.exp(self.params["logK_min"]) ) / 2 * 0.1 ## assume consuming 10% of capital
 
@@ -166,8 +271,6 @@ class model:
 
         self.params["state_intervals"]["log_xi_baseline"] = tf.reshape(tf.linspace(self.params['log_xi_baseline_min'], self.params['log_xi_baseline_max'], self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
         self.params["state_intervals"]["log_xi_baseline_interval_size"] =  self.params["state_intervals"]["log_xi_baseline"][1] -  self.params["state_intervals"]["log_xi_baseline"][0]
-
-
 
         if "post_damage" in self.params["model_type"]:
             self.params["state_intervals"]["gamma_3"] = tf.reshape(tf.linspace(self.params['gamma_3_min'], self.params['gamma_3_max'], self.params['batch_size'] + 1), (self.params['batch_size'] + 1,1))
@@ -318,27 +421,27 @@ class model:
                 i_I                             = self.i_I_nn(X)
                 i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
-            elif self.params["channel_type"]=="capital":
+            # elif self.params["channel_type"]=="capital":
 
-                X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi, log_xi_baseline, log_xi_baseline], 1)
-                i_I                             = self.i_I_nn(X)
-                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            #     X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi, log_xi_baseline, log_xi_baseline], 1)
+            #     i_I                             = self.i_I_nn(X)
+            #     i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
-            elif self.params["channel_type"]=="climate":
+            # elif self.params["channel_type"]=="climate":
 
-                X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi_baseline, log_xi, log_xi_baseline], 1)
-                i_I                             = self.i_I_nn(X)
-                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            #     X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi_baseline, log_xi, log_xi_baseline], 1)
+            #     i_I                             = self.i_I_nn(X)
+            #     i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
-            elif self.params["channel_type"]=="technology":
-                X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi_baseline, log_xi_baseline, log_xi], 1)
-                i_I                             = self.i_I_nn(X)
-                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            # elif self.params["channel_type"]=="technology":
+            #     X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi_baseline, log_xi_baseline, log_xi], 1)
+            #     i_I                             = self.i_I_nn(X)
+            #     i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
             
-            else:
-                X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi_baseline, log_xi_baseline, log_xi_baseline], 1)
-                i_I                             = self.i_I_nn(X)
-                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            # else:
+            #     X = tf.concat([logK, R, Y, log_I_g, gamma_3, log_xi_baseline, log_xi_baseline, log_xi_baseline], 1)
+            #     i_I                             = self.i_I_nn(X)
+            #     i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
 
         if "pre_damage" in self.params["model_type"] and "post_tech" in self.params["model_type"]:
@@ -382,30 +485,30 @@ class model:
                 i_I         = self.i_I_nn(X)
                 i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
-            if self.params["channel_type"]=="capital":
+            # if self.params["channel_type"]=="capital":
 
-                X           = tf.concat([logK, R, Y, log_I_g, log_xi, log_xi_baseline, log_xi_baseline], 1)
-                i_I         = self.i_I_nn(X)
-                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            #     X           = tf.concat([logK, R, Y, log_I_g, log_xi, log_xi_baseline, log_xi_baseline], 1)
+            #     i_I         = self.i_I_nn(X)
+            #     i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
-            if self.params["channel_type"]=="climate":
+            # if self.params["channel_type"]=="climate":
 
-                X           = tf.concat([logK, R, Y, log_I_g, log_xi_baseline, log_xi, log_xi_baseline], 1)
-                i_I         = self.i_I_nn(X)
-                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            #     X           = tf.concat([logK, R, Y, log_I_g, log_xi_baseline, log_xi, log_xi_baseline], 1)
+            #     i_I         = self.i_I_nn(X)
+            #     i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
 
-            if self.params["channel_type"]=="technology":
+            # if self.params["channel_type"]=="technology":
 
-                X           = tf.concat([logK, R, Y, log_I_g, log_xi_baseline, log_xi_baseline, log_xi], 1)
-                i_I         = self.i_I_nn(X)
-                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            #     X           = tf.concat([logK, R, Y, log_I_g, log_xi_baseline, log_xi_baseline, log_xi], 1)
+            #     i_I         = self.i_I_nn(X)
+            #     i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
 
-            if self.params["channel_type"]=="baseline":
+            # if self.params["channel_type"]=="baseline":
 
-                X           = tf.concat([logK, R, Y, log_I_g, log_xi_baseline, log_xi_baseline, log_xi_baseline], 1)
-                i_I         = self.i_I_nn(X)
-                i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
+            #     X           = tf.concat([logK, R, Y, log_I_g, log_xi_baseline, log_xi_baseline, log_xi_baseline], 1)
+            #     i_I         = self.i_I_nn(X)
+            #     i_I_capped  = tf.reshape( tf.math.maximum( i_I , 0.000000001), [self.params["batch_size"], 1])
             
 
         xi  = tf.exp(log_xi)
@@ -1788,8 +1891,8 @@ class model:
         pathlib.Path(export_folder).mkdir(parents=True, exist_ok=True) 
         
         ## Initial state 
-        init_logK     = tf.math.log(739.0)
-        init_R        = 0.5  
+        init_logK     = tf.math.log(880.0)
+        init_R        = 0.7
         init_I_g      = tf.math.log(11.2)
         init_Y        = 1.1
 
@@ -1800,21 +1903,21 @@ class model:
 
         if self.params["channel_type"] == "full":
             state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi,  log_xi,  log_xi]] )
-        elif self.params["channel_type"] == "capital":
+        # elif self.params["channel_type"] == "capital":
 
-            state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi,  log_xi_baseline,  log_xi_baseline]] )
-        elif self.params["channel_type"] == "climate":
+        #     state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi,  log_xi_baseline,  log_xi_baseline]] )
+        # elif self.params["channel_type"] == "climate":
 
-            state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi_baseline,  log_xi,  log_xi_baseline]] )
-        # elif self.params["channel_type"] == "damage":
+        #     state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi_baseline,  log_xi,  log_xi_baseline]] )
+        # # elif self.params["channel_type"] == "damage":
 
-        #     state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi_baseline,  log_xi_baseline,  log_xi,  log_xi_baseline,  init_I_g]] )
-        elif self.params["channel_type"] == "technology":
+        # #     state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y, log_xi_baseline,  log_xi_baseline,  log_xi,  log_xi_baseline,  init_I_g]] )
+        # elif self.params["channel_type"] == "technology":
 
-            state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi_baseline,  log_xi_baseline,  log_xi]] )
-        elif self.params["channel_type"] == "baseline":
+        #     state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi_baseline,  log_xi_baseline,  log_xi]] )
+        # elif self.params["channel_type"] == "baseline":
 
-            state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi_baseline,  log_xi_baseline,  log_xi_baseline]] )
+        #     state         = tf.convert_to_tensor( [[ init_logK,  init_R, init_Y,  init_I_g, log_xi_baseline,  log_xi_baseline,  log_xi_baseline]] )
 
         state         = tf.reshape(state, (1,7))
 
@@ -2511,7 +2614,7 @@ class model:
         plt.xlabel(r"$\gamma_3$")
         plt.legend()
         plt.xlim([0,1/3])
-        plt.ylim([0, 0.1])
+        # plt.ylim([0, 0.2])
         plt.savefig(export_folder + '/Dmg_Dist_IMSI_2023.png')
         plt.close()
 
@@ -2519,20 +2622,20 @@ class model:
 
         ## Plot bar chart
         baseline = np.ones(self.params["A_g_prime_length"]) / self.params["A_g_prime_length"]
-        x1       = np.linspace(self.params["A_g_prime_min"], self.params["A_g_prime_max"], self.params["A_g_prime_length"])
+        x1       =  np.array(self.params["A_g_prime_list"])
         distorted = np.ones(self.params["A_g_prime_length"]) / self.params["A_g_prime_length"]
         for i in range(self.params["A_g_prime_length"]):
             distorted[i] = data_dict['g_j_'+str(i)+'_simulation_norm'][-1]
 
-        bin_edges = np.linspace(0.12, 0.13, 4)
+        # bin_edges = np.linspace(0.11, 0.14, 4)
         print("Tech Models: {}"  .format(distorted))
-        plt.hist(x1, weights=baseline, label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey",bins=bin_edges)
-        plt.hist(x1, weights=distorted,  label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey",bins=bin_edges)
+        plt.hist(x1, weights=baseline, label='Baseline', color = 'C3', alpha=0.5, ec="darkgrey")#,bins=bin_edges)
+        plt.hist(x1, weights=distorted,  label='Distorted', color = 'C0', alpha=0.5, ec="darkgrey")#,bins=bin_edges)
         plt.title("Distorted Probability of Technology Models")
         plt.xlabel(r"$A'_g$")
         plt.legend()
-        plt.xlim([self.params["A_g_prime_min"],self.params["A_g_prime_max"]])
-        plt.ylim([0, 0.6])
+        plt.xlim([x1[0],x1[-1]])
+        plt.ylim([0, 1.0])
         plt.savefig(export_folder + '/Tech_Dist_IMSI_2023.png')
         plt.close()
 
