@@ -1,0 +1,12 @@
+# Ignore generated runtime scripts
+bash/
+
+# Ignore job output directories (job-out, job-outs)
+job-outs/
+job-out*
+
+# Ignore generic output folders
+output/
+
+# Ignore any Slurm / task output files
+*.out
