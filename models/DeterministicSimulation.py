@@ -59,7 +59,7 @@ def load_PreDamagePreTech_model(export_root, params_override=None):
 
 from typing import Dict, Any, Tuple, List
 import numpy as np
-def simulate_path_pre_damage_pretech(
+def simulate_path_PreDamagePreTech(
     model,
     ξ ,
     T ,
