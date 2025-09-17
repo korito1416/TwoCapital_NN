@@ -38,7 +38,7 @@ PARAMS = {
     "A_g": 0.1085, 
     "A_g_prime": 0.1303,
     "A_g_prime_prime": 0.1567,
-    "π" : 0.5,
+    "π" : 0.04,
 
 
     # 3) Table: Economic Parameters

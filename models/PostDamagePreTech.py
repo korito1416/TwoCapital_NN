@@ -34,7 +34,7 @@ class PostDamagePreTechModel:
 
         ### Load weights from PostDamagePostTech and PostDamageIntermTech model
         self.v_PostDamagePostTech_nn    = FeedForwardSubNet(self.params['v_nn_config'])
-        self.v_PostDamagePostTech_nn.build( (self.params["batch_size"], 5) )
+        self.v_PostDamagePostTech_nn.build( (self.params["batch_size"], 6) )
         self.v_PostDamagePostTech_nn.load_weights(self.params["v_PostDamagePostTech_nn_path"] )
         
         self.v_PostDamageIntermTech_nn    = FeedForwardSubNet(self.params['v_nn_config'])
@@ -182,7 +182,7 @@ class PostDamagePreTechModel:
         v = self.v_nn(X)
         i_g = self.i_g_nn(X)
         i_d = self.i_d_nn(X)
-        i_r = self.i_r_nn(X) # I_r / K
+        i_r = tf.exp(-self.i_r_nn(X)) # I_r / K
         
         # State Variables Transformations
         ξ = tf.exp(logξ)
@@ -265,7 +265,7 @@ class PostDamagePreTechModel:
         ######################
         J_g_prime  = (1- π) * tf.exp(logR) / varrho ; J_g_prime_prime  =  π * tf.exp(logR) / varrho 
         
-        v_PostDamagePostTech  = self.v_PostDamagePostTech_nn( tf.concat([logK, Z, Y,   λ3 , logξ], 1) )
+        v_PostDamagePostTech  = self.v_PostDamagePostTech_nn( tf.concat([logK, Z, Y, logR,  λ3 , logξ], 1) )
 
         v_PostDamageIntermTech  = self.v_PostDamageIntermTech_nn( tf.concat([logK, Z, Y, logR, λ3 , logξ], 1) )
         
@@ -297,9 +297,9 @@ class PostDamagePreTechModel:
         
         FOC_d = -marginal_util_c + Γ_d * θ_d / ( inside_log_i_d ) * (dv_dlogK - Z * dv_dZ)
         FOC_g = -marginal_util_c + Γ_g * θ_g / ( inside_log_i_g )   * (dv_dlogK +  (1.0 - Z) * dv_dZ)
-        FOC_r = -marginal_util_c + ψ0 * ψ1 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )* dv_dlogR / i_r
+        FOC_r = -marginal_util_c * i_r+ ψ0 * ψ1 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )* dv_dlogR  
         
-        return rhs, pv, dv_dY, c, 1.0 + θ_g * i_g , 1.0 + θ_d * i_d,  FOC_d, FOC_g , FOC_r
+        return rhs, pv, dv_dY, c, 1.0 + θ_g * i_g , 1.0 + θ_d * i_d,  FOC_d, FOC_g , FOC_r , dv_dlogR
 
 
     @tf.function
@@ -309,7 +309,7 @@ class PostDamagePreTechModel:
         ## It depends on which NN it is training. Controls and value functions have different
         ## objectives.
         
-        rhs, pv, dv_dY, c, inside_log_i_g , inside_log_i_d ,  FOC_d, FOC_g,  FOC_r = self.pde_rhs(logK, Z, Y, logR, λ3, logξ)
+        rhs, pv, dv_dY, c, inside_log_i_g , inside_log_i_d ,  FOC_d, FOC_g,  FOC_r ,dv_dlogR  = self.pde_rhs(logK, Z, Y, logR, λ3, logξ)
 
         epsilon = 10e-8
         
@@ -348,13 +348,14 @@ class PostDamagePreTechModel:
                 ## loss associated with dv/dY > 0
                 loss_dv_dY = dv_dY  * tf.reshape( tf.cast(Y > self.params['y_upper'], tf.float32 ),  [self.params["batch_size"], 1]) \
                     * tf.reshape( tf.cast( dv_dY > 0, tf.float32 ),  [self.params["batch_size"], 1]) + 10e-8
+                loss_dv_dlogR =  dv_dlogR  * tf.reshape( tf.cast( dv_dlogR < 0.0, tf.float32 ),  [self.params["batch_size"], 1]) + 10e-8
 
                     
                 loss = tf.sqrt(tf.reduce_mean(tf.square(  rhs - pv    )))  \
                        + tf.sqrt(tf.reduce_mean(tf.square(FOC_g ))) \
                         + tf.sqrt(tf.reduce_mean(tf.square(FOC_d  ))) \
                         + tf.sqrt(tf.reduce_mean(tf.square(FOC_r  ))) \
-                        + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY  )))  
+                        + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY  )))  + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dlogR  ))) 
                     
                 return loss
 
@@ -435,6 +436,12 @@ class PostDamagePreTechModel:
         best_i_g_nn.set_weights(self.i_g_nn.get_weights())
         best_i_d_nn.set_weights(self.i_d_nn.get_weights())
         best_i_r_nn.set_weights(self.i_r_nn.get_weights())
+ 
+ 
+        self.v_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/v_nn_checkpoint_PostDamagePostTech')
+        self.i_g_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_g_nn_checkpoint_PostDamagePostTech')
+        self.i_d_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_d_nn_checkpoint_PostDamagePostTech')
+        self.i_r_nn.load_weights( self.params["job_name"]  + '/PostDamageIntermTech/i_r_nn_checkpoint_PostDamageIntermTech')
  
         ## Load pretrained weights
         if self.params['pretrained_path'] is not None:
@@ -676,6 +683,7 @@ if __name__ == '__main__':
     "num_iterations" : num_iterations, "logging_frequency": logging_frequency, "verbose": True, 
     "pretrained_path" : pretrained_path, "learning_rate_schedule_type" : learning_rate_schedule_type}
 
+    params["job_name"] = export_folder
     params["export_folder"]  = export_folder +  "/PostDamagePreTech"
     params["v_PostDamagePostTech_nn_path"]  = export_folder +  "/PostDamagePostTech/v_nn_checkpoint_PostDamagePostTech"
     params["v_PreDamagePostTech_nn_path"]  = export_folder +  "/PreDamagePostTech/v_nn_checkpoint_PreDamagePostTech"

@@ -33,7 +33,7 @@ class PreDamagePostTechModel:
 
         ### Load weights from PostDamagePostTech model
         self.v_PostDamagePostTech_nn    = FeedForwardSubNet(self.params['v_nn_config'])
-        self.v_PostDamagePostTech_nn.build( (self.params["batch_size"], 5) )
+        self.v_PostDamagePostTech_nn.build( (self.params["batch_size"], 6) )
         self.v_PostDamagePostTech_nn.load_weights(self.params["v_PostDamagePostTech_nn_path"] )
         
         ## Create ranges for sampling later 
@@ -171,7 +171,7 @@ class PreDamagePostTechModel:
         #### Compute value functions and derivatives
         ###############
         
-        X = tf.concat([logK, Z, Y, logξ], 1)
+        X = tf.concat([logK, Z, Y, logR, λ3, logξ], 1)
          
         # Controls defined in section 3.4
         v = self.v_nn(X)
@@ -256,7 +256,7 @@ class PreDamagePostTechModel:
         for l in range(L): # L is the number of damage realizations
             λ3_l = λ3_values[l]
             
-            v_PostDamagePostTech  = self.v_PostDamagePostTech_nn( tf.concat([logK, Z, tf.ones(tf.shape(Y)) * y_upper,   λ3_l * tf.ones(tf.shape(Y)), logξ], 1) )
+            v_PostDamagePostTech  = self.v_PostDamagePostTech_nn( tf.concat([logK, Z, tf.ones(tf.shape(Y)) * y_upper,  logR , λ3_l * tf.ones(tf.shape(Y)), logξ], 1) )
             g_l = tf.exp(-1/ξ * (v_PostDamagePostTech - v) )
             Jump_term +=  J_d / L * g_l * (v_PostDamagePostTech - v) + ξ * J_d / L * (1- g_l + g_l  * tf.math.log(g_l ) )
  
@@ -396,7 +396,7 @@ class PreDamagePostTechModel:
         # Prepare to store best neural networks and initialize networks
         min_loss = float("inf")
         
-        n_inputs = 4
+        n_inputs = 6
 
         best_v_nn    = FeedForwardSubNet(self.params['v_nn_config'])
         best_v_nn.build( (self.params["batch_size"], n_inputs) ) 
@@ -415,6 +415,10 @@ class PreDamagePostTechModel:
         best_i_g_nn.set_weights(self.i_g_nn.get_weights())
         best_i_d_nn.set_weights(self.i_d_nn.get_weights())
  
+        self.v_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/v_nn_checkpoint_PostDamagePostTech')
+        self.i_g_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_g_nn_checkpoint_PostDamagePostTech')
+        self.i_d_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_d_nn_checkpoint_PostDamagePostTech')
+        
         ## Load pretrained weights
         if self.params['pretrained_path'] is not None:
             self.v_nn.load_weights( self.params["pretrained_path"]  + '/PreDamagePostTech/v_nn_checkpoint_PreDamagePostTech')
@@ -632,7 +636,8 @@ if __name__ == '__main__':
     "v_nn_config" : v_nn_config, "i_g_nn_config" : i_g_nn_config, "i_d_nn_config" : i_d_nn_config,  
     "num_iterations" : num_iterations, "logging_frequency": logging_frequency, "verbose": True, 
     "pretrained_path" : pretrained_path, "learning_rate_schedule_type" : learning_rate_schedule_type}
-
+    
+    params["job_name"] =export_folder
     params["export_folder"]  = export_folder +  "/PreDamagePostTech"
     params["v_PostDamagePostTech_nn_path"]  = export_folder +  "/PostDamagePostTech/v_nn_checkpoint_PostDamagePostTech"
     params["v_PreDamagePostTech_nn_path"]  = export_folder +  "/PreDamagePostTech/v_nn_checkpoint_PreDamagePostTech"

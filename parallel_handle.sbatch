@@ -17,7 +17,7 @@ module load cuda/11.2
 module load python/anaconda-2021.05
 
 # prefix="/scratch/midway3/pengyu" /project/lhansen/Cap_damage/TwoStageTechJump/output
-prefix="/project/lhansen/Cap_damage/TwoStageTechJump/output"
+prefix="/project/lhansen/Cap_damage/TwoStageTechJump/output_Sim"
 
 pretrain_folder="None"
   
@@ -28,21 +28,25 @@ SLURM_NTASKS=2
 num_iterations1="2000000"
 num_iterations2="2000000"
 
-num_iterations1="100000"
-num_iterations2="100000"
+num_iterations1="5000"
+num_iterations2="5000"
 # num_iterations1="1000"
 
 # A_g_prime_num="0.15"
 logging_frequency="1000"
+
+learning_rates_post="10e-4,10e-4,10e-4,10e-4"
+
 learning_rates="10e-4,10e-4,10e-4,10e-4"
-learning_rates="40e-5,40e-4,40e-4,40e-4"
-learning_rates="40e-6,40e-4,40e-4,40e-4"
+# learning_rates="40e-5,40e-4,40e-4,40e-4"
+# learning_rates="40e-6,40e-4,40e-4,40e-4"
 # learning_rates="10e-5,10e-5,10e-5,10e-5"
 # learning_rates="40e-5,40e-5,40e-5,40e-5"
 # learning_rates="10e-6,10e-6,10e-6,10e-6"
 # learning_rates="40e-6,40e-6,40e-6,40e-6"
 # learning_rates="10e-7,10e-7,10e-7,10e-7"
 # learning_rates="40e-7,40e-7,40e-7,40e-7"
+learning_rates="20e-7,20e-7,20e-7,20e-7"
 
 hidden_layer_activations="swish,tanh,tanh,softplus"
 output_layer_activations="softplus,custom,custom,softplus"
@@ -60,7 +64,7 @@ learning_rate_schedule_type="piecewiseconstant"
 
 # echo "range_type=${range_type}"
 
-foldername="TasksTwoTechJumps_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_num_iterations${num_iterations1}"
+foldername="TechSearch_LR_${learning_rate_schedule_type}_${learning_rates}_${batch_size}_neurons_${num_neurons}_#HiddenLayer_${num_hidden_layers}_num_iterations${num_iterations1}"
 
 
 job_name="${prefix}/${foldername}"
@@ -134,7 +138,7 @@ echo "\$SLURM_JOB_NAME"
 echo "Program starts \$(date)"
 start_time=\$(date +%s)
 
-python models/PostDamagePostTech.py $job_name $batch_size $num_iterations1  $pretrained_PostDamagePostTech_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $foldername    
+python models/PostDamagePostTech.py $job_name $batch_size $num_iterations1  $pretrained_PostDamagePostTech_folder $logging_frequency $learning_rates_post  $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $foldername    
 
 echo "Program ends \$(date)"
 end_time=\$(date +%s)
@@ -160,7 +164,7 @@ echo "\$SLURM_JOB_NAME"
 echo "Program starts \$(date)"
 start_time=\$(date +%s)
 
-python models/PostDamageIntermTech.py $job_name $batch_size $num_iterations1  $pretrained_PostDamageIntermTech_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $foldername    
+python models/PostDamageIntermTech.py $job_name $batch_size $num_iterations2  $pretrained_PostDamageIntermTech_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $foldername    
 
 echo "Program ends \$(date)"
 end_time=\$(date +%s)
@@ -191,7 +195,7 @@ echo "\$SLURM_JOB_NAME"
 echo "Program starts \$(date)"
 start_time=\$(date +%s)
 
-python models/PostDamagePreTech.py $job_name $batch_size $num_iterations1  $pretrained_PostDamagePreTech_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $foldername    
+python models/PostDamagePreTech.py $job_name $batch_size $num_iterations2  $pretrained_PostDamagePreTech_folder $logging_frequency $learning_rates $hidden_layer_activations $output_layer_activations $num_hidden_layers $num_neurons $learning_rate_schedule_type $foldername    
 
 echo "Program ends \$(date)"
 end_time=\$(date +%s)
@@ -304,8 +308,7 @@ parallel3="parallel --delay 0.2 -j $SLURM_NTASKS --joblog ./job-outs/${jobout_na
 parallel4="parallel --delay 0.2 -j $SLURM_NTASKS --joblog ./job-outs/${jobout_name}/runtask4.log --resume"
 parallel5="parallel --delay 0.2 -j $SLURM_NTASKS --joblog ./job-outs/${jobout_name}/runtask5.log --resume"
 parallel6="parallel --delay 0.2 -j $SLURM_NTASKS --joblog ./job-outs/${jobout_name}/runtask6.log --resume"
-# Execute stages in sequence
-# Stage 1: single job
+# Execute stages in sequence 
 $parallel1 -n0 "$srun bash/${jobout_name}/runtask_PostDamagePostTech.sh > ./job-outs/${jobout_name}/PostDamagePostTech.out 2> ./job-outs/${jobout_name}/dmg_PostDamagePostTech.err" ::: {1}
 $parallel2 -n0 "$srun bash/${jobout_name}/runtask_PostDamageIntermTech.sh > ./job-outs/${jobout_name}/PostDamageIntermTech.out 2> ./job-outs/${jobout_name}/dmg_PostDamageIntermTech.err" ::: {1}
 $parallel3 -n0 "$srun bash/${jobout_name}/runtask_PostDamagePreTech.sh > ./job-outs/${jobout_name}/PostDamagePreTech.out 2> ./job-outs/${jobout_name}/dmg_PostDamagePreTech.err" ::: {1}

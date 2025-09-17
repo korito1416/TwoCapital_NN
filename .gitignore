@@ -7,6 +7,10 @@ job-out*
 
 # Ignore generic output folders
 output/
+output_NonPretrain/
+output_reformed/
+output_Sep17/
+output_Sim/
 
 # Ignore any Slurm / task output files
 *.out

@@ -75,7 +75,7 @@ def setup_optimizers(params):
         return
 
     if lr_type == "piecewiseconstant":
-        boundaries = [int(round(x)) for x in np.linspace(0, num_iterations, 8)][1:-1]
+        boundaries = [int(round(x)) for x in np.linspace(0, num_iterations, 20)][1:-1]
         values_list = [[float(lr) / np.power(4, x) for x in range(len(boundaries) + 1)] for lr in learning_rates]
         lr_schedulers = [tf.keras.optimizers.schedules.PiecewiseConstantDecay(boundaries, values) for values in values_list]
         params["optimizers"] = [tf.keras.optimizers.Adam(learning_rate=s) for s in lr_schedulers]

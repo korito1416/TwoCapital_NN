@@ -169,7 +169,7 @@ class PostDamagePostTechModel:
         #### Compute value functions and derivatives
         ###############
         
-        X = tf.concat([logK, Z, Y,  λ3, logξ], 1)
+        X = tf.concat([logK, Z, Y, logR, λ3, logξ], 1)
          
         # Controls defined in section 3.4
         v = self.v_nn(X)
@@ -375,7 +375,7 @@ class PostDamagePostTechModel:
         # Prepare to store best neural networks and initialize networks
         min_loss = float("inf")
         
-        n_inputs = 5
+        n_inputs = 6
 
         best_v_nn    = FeedForwardSubNet(self.params['v_nn_config'])
         best_v_nn.build( (self.params["batch_size"], n_inputs) ) 
