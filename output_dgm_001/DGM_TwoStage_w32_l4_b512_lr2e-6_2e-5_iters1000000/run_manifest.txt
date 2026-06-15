@@ -1,0 +1,22 @@
+Architecture: Deep Galerkin Method gated network
+Source architecture: alialaradi/DeepGalerkinMethod
+Created: Mon Jun 15 11:13:24 CDT 2026
+Model directory: models_dgm
+Output root: /project/lhansen/Cap_damage/TwoStageTechJump_FOCIr_orignal/output_dgm_001
+Width: 32
+DGM layers: 4
+Batch size: 512
+Value learning rate: 2e-6
+Control learning rate: 2e-5
+Schedule: warmup_cosine
+Iterations per regime: 1000000
+Tech jump probability pi: 0.04
+Tech intensity scale: 1.0
+Training initialization: random DGM weights
+Baseline function distillation: 20000 steps before HJB training
+PostDamagePostTech job: 50785812
+PostDamageIntermTech job: 50785813 (afterok:50785812)
+PreDamagePostTech job: 50785814 (afterok:50785812)
+PostDamagePreTech job: 50785815 (afterok:50785813)
+PreDamageIntermTech job: 50785816 (afterok:50785813:50785814)
+PreDamagePreTech job: 50785817 (afterok:50785815:50785816)
