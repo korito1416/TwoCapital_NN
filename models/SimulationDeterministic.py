@@ -9,8 +9,9 @@ This module adapts the code you provided into reusable functions.
 """
 
 import os
+import ast
 import tensorflow as tf
-from params import PARAMS
+from params import PARAMS, investment_rate_activation
 from PreDamagePreTech import PreDamagePreTechModel
 from PreDamageIntermTech import PreDamageIntermTechModel
 import matplotlib.pyplot as plt
@@ -123,6 +124,40 @@ def infer_tech_jump_intensity_scale(export_root):
                     except (IndexError, ValueError):
                         pass
     return float(PARAMS.get("tech_jump_intensity_scale", 1.0))
+
+
+def infer_saved_economic_parameters(export_root):
+    """Read calibration values saved by training so simulation is self-contained."""
+    parameter_names = {
+        "σ_d",
+        "σ_g",
+        "Γ_d",
+        "Γ_g",
+        "θ_d",
+        "θ_g",
+        "ψ0",
+    }
+    candidates = [
+        os.path.join(export_root, "PreDamagePreTech", "params.txt"),
+        os.path.join(export_root, "PreDamageIntermTech", "params.txt"),
+        os.path.join(export_root, "PostDamagePreTech", "params.txt"),
+        os.path.join(export_root, "PostDamageIntermTech", "params.txt"),
+    ]
+    for path in candidates:
+        if not os.path.exists(path):
+            continue
+        overrides = {}
+        with open(path, "r") as parameter_file:
+            for line in parameter_file:
+                name, separator, value = line.partition(":")
+                if separator and name in parameter_names:
+                    try:
+                        overrides[name] = float(value.strip().split()[0])
+                    except (IndexError, ValueError):
+                        pass
+        if overrides:
+            return overrides
+    return {}
 
 
 def infer_tech_jump_probability(export_root):
@@ -421,7 +456,7 @@ def simulate_path_PreDamagePreTech(
         g_primeprime = [tf.exp(-1.0 / ξ * (v_post - v_now))]
         if (
             initial_tech_regime == "pre"
-            and float(tech_jump_probability) < 1.0 - 1e-12
+            and float(π) < 1.0 - 1e-12
             and getattr(model, "v_PreDamageIntermTech_nn", None) is not None
         ):
             # v_interm uses the same full-state layout as v_now
@@ -913,6 +948,25 @@ if __name__ == "__main__":
     # Promising one
     # export_folder = "/project/lhansen/Cap_damage/TwoStageTechJump_FOCIr_orignal/output_001/TwoStageTech_LR_warmup_cosine_10e-6,10e-4_128_neurons_32_#HiddenLayer_4_num_iterations1000000"
     export_folder = sys.argv[1]
+    saved_economic_parameters = infer_saved_economic_parameters(export_folder)
+    PARAMS.update(saved_economic_parameters)
+    def infer_network_widths(export_root, initial_regime):
+        stage = "PreDamagePreTech" if initial_regime == "pre" else "PreDamageIntermTech"
+        config_path = os.path.join(export_root, stage, "params_v_nn_config.txt")
+        if not os.path.exists(config_path):
+            return [32, 32, 32, 32]
+        with open(config_path, "r") as f:
+            for line in f:
+                if line.startswith("num_hiddens:"):
+                    try:
+                        return list(ast.literal_eval(line.split(":", 1)[1].strip()))
+                    except (SyntaxError, ValueError):
+                        pass
+        return [32, 32, 32, 32]
+
+    initial_tech_regime = infer_initial_tech_regime(export_folder)
+    network_widths = infer_network_widths(export_folder, initial_tech_regime)
+
     # ============================================================
     # Network/training metadata (used to reconstruct the nets)
     # ============================================================
@@ -925,9 +979,9 @@ if __name__ == "__main__":
     hidden_layer_activations = "swish,tanh,tanh,softplus".split(",")
     output_layer_activations = "softplus,custom,custom,softplus".split(",")
 
-    num_hidden_layers = 4
-    num_neurons = 32
-    learning_rate_schedule_type = "piecewiseconstant"
+    num_hidden_layers = len(network_widths)
+    num_neurons = int(network_widths[0])
+    learning_rate_schedule_type = "warmup_cosine"
 
     # Normalize "None" strings if you ever pass them
     hidden_layer_activations = [None if x == "None" else x for x in hidden_layer_activations]
@@ -971,7 +1025,6 @@ if __name__ == "__main__":
 
     tech_jump_intensity_scale = infer_tech_jump_intensity_scale(export_folder)
     tech_jump_probability = infer_tech_jump_probability(export_folder)
-    initial_tech_regime = infer_initial_tech_regime(export_folder)
     one_tech_jump_mode = infer_one_tech_jump_mode(export_folder)
     simulation_y0 = float(os.environ.get("SIMULATION_Y0", PARAMS.get("Y0", 1.1)))
 
@@ -1005,11 +1058,9 @@ if __name__ == "__main__":
     params["v_PreDamageIntermTech_nn_path"] = os.path.join(export_folder, "PreDamageIntermTech", "v_nn_checkpoint_PreDamageIntermTech")
 
     # Custom final activations (must be set BEFORE loading weights)
-    phi_g = 16.7
-    phi_d = 16.7
     if (output_layer_activations[1] == "custom") or (output_layer_activations[2] == "custom"):
-        params["i_g_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0 / phi_g) / (tf.exp(2.0 * x) + 1.0)
-        params["i_d_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0 / phi_d) / (tf.exp(2.0 * x) + 1.0)
+        params["i_g_nn_config"]["final_activation"] = investment_rate_activation(PARAMS["θ_g"])
+        params["i_d_nn_config"]["final_activation"] = investment_rate_activation(PARAMS["θ_d"])
 
     # Push into global PARAMS used by your model modules
     PARAMS.update(params)
@@ -1030,6 +1081,7 @@ if __name__ == "__main__":
     print(f"Initial technology regime: {initial_tech_regime}")
     print(f"One-tech-jump simulation mode: {one_tech_jump_mode}")
     print(f"Initial deterministic temperature Y0: {simulation_y0}")
+    print(f"Saved economic parameter overrides: {saved_economic_parameters}")
     if initial_tech_regime == "intermediate" and one_tech_jump_mode:
         print(
             "Specification note: one-tech-jump simulation uses the "

@@ -15,7 +15,8 @@ from feedforward_subnet import (
     setup_optimizers,
     validation_score,
 )
-from params import PARAMS 
+from params import PARAMS, investment_rate_activation
+from pretrained_paths import legacy_nber_folder
 
 class PreDamagePostTechModel:
     """Pre-damage & Post-technology HJB.
@@ -409,10 +410,11 @@ class PreDamagePostTechModel:
         # self.i_g_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_g_nn_checkpoint_PostDamagePostTech')
         # self.i_d_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_d_nn_checkpoint_PostDamagePostTech')
         
-        NBER_folder = "/project/lhansen/Cap_NN_oldVersion/November_version_NewParameters/output/Novem_NewParaters_0.01_LR_piecewiseconstant_10e-5,10e-5,10e-5,10e-5_128_neurons_32_#HiddenLayer_4_logxi_-3.0_logximax_5.0_num_iterations2000000"
-        self.v_nn.load_weights( NBER_folder + "/post_tech_pre_damage/v_nn_checkpoint_post_tech_pre_damage" )
-        self.i_g_nn.load_weights( NBER_folder  + "/post_tech_pre_damage/i_g_nn_checkpoint_post_tech_pre_damage")
-        self.i_d_nn.load_weights( NBER_folder + "/post_tech_pre_damage/i_d_nn_checkpoint_post_tech_pre_damage" )
+        NBER_folder = legacy_nber_folder(required=self.params.get("pretrained_path") is None)
+        if NBER_folder is not None:
+            self.v_nn.load_weights( NBER_folder + "/post_tech_pre_damage/v_nn_checkpoint_post_tech_pre_damage" )
+            self.i_g_nn.load_weights( NBER_folder  + "/post_tech_pre_damage/i_g_nn_checkpoint_post_tech_pre_damage")
+            self.i_d_nn.load_weights( NBER_folder + "/post_tech_pre_damage/i_d_nn_checkpoint_post_tech_pre_damage" )
  
         
         
@@ -669,12 +671,10 @@ if __name__ == '__main__':
     params["v_PostDamagePreTech_nn_path"]  = export_folder +  "/PostDamagePreTech/v_nn_checkpoint_PostDamagePreTech"
     params["v_PostDamageIntermTech_nn_path"]  = export_folder +  "/PostDamageIntermTech/v_nn_checkpoint_PostDamageIntermTech"
     params["v_PreDamageIntermTech_nn_path"]  = export_folder +  "/PreDamageIntermTech/v_nn_checkpoint_PreDamageIntermTech"
-    ## i_g and i_d activations come after params because we amy want to use phi_g and phi_d
-    phi_g = 16.7
-    phi_d = 16.7
+    # The lower control bound is -1/theta, which keeps log(1 + theta*i) valid.
     if output_layer_activations[1] == "custom" or output_layer_activations[2] == "custom":
-        params["i_g_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0/ phi_g) / (tf.exp(2 * x) + 1.0)
-        params["i_d_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0/ phi_d) / (tf.exp(2 * x) + 1.0)
+        params["i_g_nn_config"]["final_activation"] = investment_rate_activation(PARAMS["θ_g"])
+        params["i_d_nn_config"]["final_activation"] = investment_rate_activation(PARAMS["θ_d"])
 
     test_model = PreDamagePostTechModel(params)
     test_model.export_parameters()

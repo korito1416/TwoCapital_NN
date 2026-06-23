@@ -6,7 +6,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=21G
-#SBATCH --job-name=oneTech_stage
+#SBATCH --job-name=sensitivity_stage
 
 set -euo pipefail
 
@@ -18,30 +18,29 @@ module unload python
 module load cuda/11.2
 module load python/anaconda-2021.05
 
-PREFIX="${PREFIX:-/project/lhansen/Cap_damage/TwoStageTechJump_FOCIr_orignal/output_001}"
-PRETRAINED_FOLDER="${PRETRAINED_FOLDER:-${PREFIX}/TwoStageTech_LR_warmup_cosine_10e-6,10e-4_128_neurons_32_#HiddenLayer_4_num_iterations1000000}"
+PREFIX="${PREFIX:-/project/lhansen/Cap_damage/TwoStageTechJump_FOCIr_orignal/output_sensitivity_001}"
+PRETRAINED_FOLDER="${PRETRAINED_FOLDER:-/project/lhansen/Cap_damage/TwoStageTechJump_FOCIr_orignal/output_001/TwoStageTech_LR_warmup_cosine_10e-6,10e-4_128_neurons_32_#HiddenLayer_4_num_iterations1000000}"
 MODEL_DIR="${MODEL_DIR:-models}"
-FOLDERNAME="${FOLDERNAME:?FOLDERNAME must be set}"
+FOLDERNAME="${FOLDERNAME:?FOLDERNAME must be provided}"
 JOB_NAME="${JOB_NAME:-${PREFIX}/${FOLDERNAME}}"
 
-BATCH_SIZE="${BATCH_SIZE:-512}"
-NUM_ITERATIONS_POSTTECH="${NUM_ITERATIONS_POSTTECH:-1000000}"
-NUM_ITERATIONS_INTERMTECH="${NUM_ITERATIONS_INTERMTECH:-1000000}"
+BATCH_SIZE="${BATCH_SIZE:-128}"
+NUM_ITERATIONS="${NUM_ITERATIONS:-1000000}"
 LOGGING_FREQUENCY="${LOGGING_FREQUENCY:-1000}"
 NUM_NEURONS="${NUM_NEURONS:-32}"
 NUM_HIDDEN_LAYERS="${NUM_HIDDEN_LAYERS:-4}"
 HIDDEN_LAYER_ACTIVATIONS="${HIDDEN_LAYER_ACTIVATIONS:-swish,tanh,tanh,softplus}"
 OUTPUT_LAYER_ACTIVATIONS="${OUTPUT_LAYER_ACTIVATIONS:-softplus,custom,custom,softplus}"
 LEARNING_RATE_SCHEDULE_TYPE="${LEARNING_RATE_SCHEDULE_TYPE:-warmup_cosine}"
-LEARNING_RATES_POSTTECH="${LEARNING_RATES_POSTTECH:-10e-6,40e-4}"
-LEARNING_RATES_INTERMTECH="${LEARNING_RATES_INTERMTECH:-10e-6,10e-4}"
+LEARNING_RATES="${LEARNING_RATES:-10e-6,10e-4}"
 TECH_JUMP_INTENSITY_SCALE="${TECH_JUMP_INTENSITY_SCALE:-1.0}"
-TECH_JUMP_PROBABILITY="${TECH_JUMP_PROBABILITY:-0.0}"
+TECH_JUMP_PROBABILITY="${TECH_JUMP_PROBABILITY:-0.04}"
 VALIDATION_BATCH_SIZE="${VALIDATION_BATCH_SIZE:-1024}"
 VALIDATION_BATCHES="${VALIDATION_BATCHES:-4}"
 VALIDATION_CONTROL_WEIGHT="${VALIDATION_CONTROL_WEIGHT:-5.0}"
 GRADIENT_CLIP_NORM="${GRADIENT_CLIP_NORM:-1.0}"
 ENABLE_TENSORBOARD="${ENABLE_TENSORBOARD:-0}"
+
 export VALIDATION_BATCH_SIZE VALIDATION_BATCHES VALIDATION_CONTROL_WEIGHT
 export GRADIENT_CLIP_NORM ENABLE_TENSORBOARD
 
@@ -50,64 +49,47 @@ if [ -z "${STAGE:-}" ]; then
     exit 2
 fi
 
-if [[ "$STAGE" == "PostDamageIntermTech" || "$STAGE" == "PreDamageIntermTech" ]] \
-    && awk -v pi="$TECH_JUMP_PROBABILITY" 'BEGIN { exit !(pi >= 1.0 - 1e-12) }'; then
-    echo "Intermediate technology stage ${STAGE} is invalid when pi=${TECH_JUMP_PROBABILITY}." >&2
-    exit 2
-fi
-
 case "$STAGE" in
     PostDamagePostTech)
         MODEL="${MODEL_DIR}/PostDamagePostTech.py"
-        LEARNING_RATES="${LEARNING_RATES_POSTTECH}"
-        NUM_ITERATIONS="${NUM_ITERATIONS_POSTTECH}"
         ;;
     PostDamageIntermTech)
         MODEL="${MODEL_DIR}/PostDamageIntermTech.py"
-        LEARNING_RATES="${LEARNING_RATES_INTERMTECH}"
-        NUM_ITERATIONS="${NUM_ITERATIONS_INTERMTECH}"
         ;;
     PostDamagePreTech)
         MODEL="${MODEL_DIR}/PostDamagePreTech.py"
-        LEARNING_RATES="${LEARNING_RATES_INTERMTECH}"
-        NUM_ITERATIONS="${NUM_ITERATIONS_INTERMTECH}"
         ;;
     PreDamagePostTech)
         MODEL="${MODEL_DIR}/PreDamagePostTech.py"
-        LEARNING_RATES="${LEARNING_RATES_POSTTECH}"
-        NUM_ITERATIONS="${NUM_ITERATIONS_POSTTECH}"
         ;;
     PreDamageIntermTech)
         MODEL="${MODEL_DIR}/PreDamageIntermTech.py"
-        LEARNING_RATES="${LEARNING_RATES_INTERMTECH}"
-        NUM_ITERATIONS="${NUM_ITERATIONS_INTERMTECH}"
         ;;
     PreDamagePreTech)
         MODEL="${MODEL_DIR}/PreDamagePreTech.py"
-        LEARNING_RATES="${LEARNING_RATES_INTERMTECH}"
-        NUM_ITERATIONS="${NUM_ITERATIONS_INTERMTECH}"
         ;;
     *)
-        echo "Unknown one-technology-jump stage: $STAGE" >&2
+        echo "Unknown STAGE: $STAGE" >&2
         exit 2
         ;;
 esac
 
-mkdir -p "${JOB_NAME}/${STAGE}" "./job-outs/${FOLDERNAME}"
+mkdir -p "${JOB_NAME}/${STAGE}" "./job-outs/sensitivity/${FOLDERNAME}"
 
 echo "$SLURM_JOB_NAME"
 echo "Stage: ${STAGE}"
-echo "Model dir: ${MODEL_DIR}"
 echo "Program starts $(date)"
 echo "Output folder: ${JOB_NAME}"
 echo "Pretrained folder: ${PRETRAINED_FOLDER}"
 echo "Learning rates: ${LEARNING_RATES}"
 echo "Iterations: ${NUM_ITERATIONS}"
-echo "Tech jump intensity scale: ${TECH_JUMP_INTENSITY_SCALE}"
-echo "Tech jump probability pi: ${TECH_JUMP_PROBABILITY}"
-echo "Training batch size: ${BATCH_SIZE}"
-echo "Validation: ${VALIDATION_BATCHES} x ${VALIDATION_BATCH_SIZE}"
-echo "Gradient clip norm: ${GRADIENT_CLIP_NORM}"
+echo "MODEL_SIGMA_D=${MODEL_SIGMA_D:-baseline}"
+echo "MODEL_SIGMA_G=${MODEL_SIGMA_G:-baseline}"
+echo "MODEL_GAMMA_D=${MODEL_GAMMA_D:-baseline}"
+echo "MODEL_GAMMA_G=${MODEL_GAMMA_G:-baseline}"
+echo "MODEL_THETA_D=${MODEL_THETA_D:-baseline}"
+echo "MODEL_THETA_G=${MODEL_THETA_G:-baseline}"
+echo "MODEL_PSI0=${MODEL_PSI0:-baseline}"
 start_time=$(date +%s)
 
 python "$MODEL" \

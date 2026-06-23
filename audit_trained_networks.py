@@ -198,6 +198,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--chunk-size", type=int, default=1024)
     parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument("--stage", action="append")
+    parser.add_argument(
+        "--include-all-stages",
+        action="store_true",
+        help="Load intermediary regimes even for a one-jump folder.",
+    )
     parser.add_argument("--output", default="network_training_audit.csv")
     return parser.parse_args()
 
@@ -207,7 +212,12 @@ def main() -> None:
     np.random.seed(args.seed)
     tf.random.set_seed(args.seed)
     reference = (
-        RegimeModels(args.reference_folder, args.xi, batch_size=128)
+        RegimeModels(
+            args.reference_folder,
+            args.xi,
+            batch_size=128,
+            include_all_stages=args.include_all_stages,
+        )
         if args.reference_folder
         else None
     )
@@ -215,7 +225,12 @@ def main() -> None:
     for raw_folder in args.export_folder:
         folder = Path(raw_folder).expanduser()
         folder = folder if folder.is_absolute() else ROOT / folder
-        evaluator = RegimeModels(str(folder), args.xi, batch_size=128)
+        evaluator = RegimeModels(
+            str(folder),
+            args.xi,
+            batch_size=128,
+            include_all_stages=args.include_all_stages,
+        )
         stages = args.stage or list(evaluator.models)
         for stage in stages:
             if stage not in evaluator.models:

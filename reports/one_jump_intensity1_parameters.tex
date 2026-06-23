@@ -1,0 +1,301 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+
+\title{One Technology Jump, Unit Intensity: Parameter and Specification Audit}
+\author{Haoyang Sun}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Model Folder}
+
+This note documents the one-technology-jump, unit-intensity model used for the direct-to-final-technology experiment.
+
+\begin{verbatim}
+output_001/
+OneTechJump_Pi_1p0_InheritedPostTech_TechIntensityScale_1p0_
+LR_warmup_cosine_10e-6,40e-4_512_neurons_32_#HiddenLayer_4_
+num_iterations1000000
+\end{verbatim}
+
+The post-technology regimes are inherited from the corresponding two-stage model:
+\begin{verbatim}
+output_001/
+TwoStageTech_LR_warmup_cosine_10e-6,10e-4_128_neurons_32_
+#HiddenLayer_4_num_iterations1000000
+\end{verbatim}
+
+\section{Regime Structure}
+
+This is the one-jump specification in which a technology jump moves directly from the pre-technology productivity to the final breakthrough productivity.  There is no intermediate technology state in this experiment.
+
+\begin{center}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.28\textwidth}
+                >{\raggedright\arraybackslash}p{0.24\textwidth}
+                >{\raggedright\arraybackslash}p{0.17\textwidth}
+                >{\raggedright\arraybackslash}p{0.20\textwidth}}
+\toprule
+Regime & State variables & R\&D active & Jump terms \\
+\midrule
+Post damage, post/final tech
+& $\log K,Z,Y,\lambda_3,\log \xi$
+& No
+& None \\
+Pre damage, post/final tech
+& $\log K,Z,Y,\log \xi$
+& No
+& Damage jump only \\
+Post damage, pre tech
+& $\log K,Z,Y,\log R,\lambda_3,\log \xi$
+& Yes
+& Direct tech jump to final tech \\
+Pre damage, pre tech
+& $\log K,Z,Y,\log R,\log \xi$
+& Yes
+& Direct tech jump to final tech and damage jump \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The excluded regimes are post-damage/intermediate-tech and pre-damage/intermediate-tech.  The active pre-technology stages use
+\[
+\pi = 1, \qquad \texttt{tech\_jump\_intensity\_scale}=1.
+\]
+Thus
+\[
+J_g^{\prime}(R) = (1-\pi)\frac{R}{\varrho}=0,
+\qquad
+J_g^{\prime\prime}(R) = \pi\frac{R}{\varrho}=\frac{R}{\varrho}.
+\]
+
+\paragraph{Metadata caveat.}
+The inherited post-technology stage folders may still contain the original two-stage metadata value $\pi=0.04$ in their local \texttt{params.txt}.  This does not affect the post-technology HJBs because those regimes have no remaining technology jump branch.  The active pre-technology stages in this one-jump model use $\pi=1$.
+
+\section{Controls and Resource Constraint}
+
+Let
+\[
+K_t = K_t^d + K_t^g,
+\qquad
+Z_t = \frac{K_t^g}{K_t},
+\qquad
+K_t^d=(1-Z_t)K_t,\quad K_t^g=Z_tK_t.
+\]
+
+The control networks report investment rates:
+\[
+i_t^d = \frac{I_t^d}{K_t^d},
+\qquad
+i_t^g = \frac{I_t^g}{K_t^g},
+\qquad
+i_t^r = \frac{I_t^r}{K_t}.
+\]
+The corresponding investment levels are
+\[
+I_t^d=i_t^d(1-Z_t)K_t,\qquad
+I_t^g=i_t^gZ_tK_t,\qquad
+I_t^r=i_t^rK_t.
+\]
+
+In pre-technology regimes, R\&D is active and the consumption-output accounting uses
+\[
+\frac{C_t}{K_t}
+=(A_d-i_t^d)(1-Z_t)+(A_g-i_t^g)Z_t-i_t^r.
+\]
+After the final technology jump, R\&D is inactive and green productivity is $A_g^{\prime\prime}$:
+\[
+\frac{C_t}{K_t}
+=(A_d-i_t^d)(1-Z_t)+(A_g^{\prime\prime}-i_t^g)Z_t.
+\]
+
+\section{State Dynamics}
+
+Sectoral capital obeys
+\[
+dK_t^j
+=K_t^j\left[\alpha_j+\Gamma_j\log(1+\theta_j i_t^j)\right]dt
+ + \sigma_jK_t^j\,dW_t^j,
+\qquad j\in\{d,g\}.
+\]
+Thus
+\[
+\phi_j(i)=\alpha_j+\Gamma_j\log(1+\theta_j i),
+\qquad
+\phi_j'(i)=\frac{\Gamma_j\theta_j}{1+\theta_j i}.
+\]
+
+Knowledge capital obeys
+\[
+d\log R_t
+=\left[
+-\zeta+\psi_0\exp\{\psi_1(\log i_t^r+\log K_t-\log R_t)\}
+-\frac{1}{2}\sigma_\kappa^2
+\right]dt+\sigma_\kappa\,dW_t^r
+\]
+in the deterministic simulation code.  In the HJB residual, the corresponding drift term is implemented with the Ito correction handled in the PDE diffusion block.
+
+Temperature evolves as
+\[
+dY_t=\bar\theta\,\eta A_d(1-Z_t)K_t\,dt
+\]
+along deterministic paths, with stochastic volatility loading $\varsigma$ in the HJB.
+
+\section{Parameter Values}
+
+\subsection*{Initial Values and Training Ranges}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Quantity & Value & Note \\
+\midrule
+$K_0$ & $880$ & Baseline capital level \\
+$Z_0$ & $0.7$ & Green capital share \\
+$Y_0$ & $1.1$ & Stored default in stage \texttt{params.txt} \\
+$Y_0$ for current simulations & $1.2$ & Used in the run manifest for this experiment \\
+$R_0$ & $11.2$ & Knowledge capital \\
+$\log K$ range & $[4,7]$ & Training range \\
+$Z$ range & $[0.01,0.99]$ & Training range \\
+$Y$ range & $[0,4]$ & Training range \\
+$\log R$ range & $[1,6]$ & Training range \\
+$\log \xi$ range & $[-3,5]$ & Training range \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Production, Capital Adjustment, and Technology}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+$A_d$ & $0.1303$ \\
+$A_g$ & $0.1085$ \\
+$A_g^{\prime}$ & $0.1303$ \\
+$A_g^{\prime\prime}$ & $0.1567$ \\
+$\alpha_d,\alpha_g$ & $-0.035,-0.035$ \\
+$\Gamma_d,\Gamma_g$ & $0.060,0.060$ \\
+$\theta_d,\theta_g$ & $16.7,16.7$ \\
+$\sigma_d,\sigma_g$ & $0.01,0.01$ \\
+$\pi$ in active pre-tech stages & $1.0$ \\
+Technology intensity scale & $1.0$ \\
+$\varrho$ & $746.67$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{R\&D and Knowledge Capital}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+$\zeta$ & $0$ \\
+$\psi_0$ & $0.10583$ \\
+$\psi_1$ & $0.5$ \\
+$\sigma_\kappa$ & $0.0078$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Climate and Damages}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+$\bar\theta$ & $0.00186$ \\
+$\eta$ & $0.291$ \\
+$\varsigma$ & $0.002232$ \\
+$\lambda_1$ & $0.00017675$ \\
+$\lambda_2$ & $0.0044$ \\
+$L$ & $5$ \\
+$\lambda_3$ grid & $\{0,1/12,1/6,1/4,1/3\}$ \\
+$r_1$ & $1.5$ \\
+$r_2$ & $0.36$ \\
+$\underline y$ & $1.5$ \\
+$\bar y$ & $2.5$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The damage jump intensity is
+\[
+J_n(y)=r_1\left[\exp\left(\frac{r_2}{2}(y-\underline y)^2\right)-1\right]
+\mathbf{1}_{\{y\geq \underline y\}},
+\qquad
+J_n^\ell(y)=\frac{1}{L}J_n(y).
+\]
+
+\section{Training Settings}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Setting & Value \\
+\midrule
+Network width & $32$ \\
+Hidden layers & $4$ \\
+Batch size, newly trained pre-tech stages & $512$ \\
+Learning-rate schedule & Warmup cosine \\
+Learning rates & \texttt{10e-6,40e-4} \\
+Iterations per newly trained stage & $1{,}000{,}000$ \\
+Pretraining source & Two-stage benchmark folder listed above \\
+Inherited stages & Post-damage/post-tech and pre-damage/post-tech \\
+Newly trained stages & Post-damage/pre-tech and pre-damage/pre-tech \\
+Gradient clipping norm & $1.0$ \\
+Validation batch size & $1024$ \\
+Validation batches & $4$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Final Recorded Training Losses}
+
+\begin{center}
+\begin{tabular}{lrrrrr}
+\toprule
+Regime & PDE & FOC $d$ & FOC $g$ & FOC $r$ & $V_Y$ penalty \\
+\midrule
+Post damage, post tech & $1.18037\times 10^{-3}$ & $4.15301\times 10^{-5}$ & $3.53160\times 10^{-5}$ & -- & $1.00000\times 10^{-7}$ \\
+Pre damage, post tech & $2.18087\times 10^{-3}$ & $2.02328\times 10^{-5}$ & $1.69947\times 10^{-5}$ & -- & $1.44681\times 10^{-7}$ \\
+Post damage, pre tech & $1.89152\times 10^{-3}$ & $1.18392\times 10^{-4}$ & $1.20692\times 10^{-4}$ & $1.95342\times 10^{-4}$ & $1.00000\times 10^{-7}$ \\
+Pre damage, pre tech & $2.25041\times 10^{-3}$ & $8.88493\times 10^{-5}$ & $8.58829\times 10^{-5}$ & $8.74578\times 10^{-5}$ & $1.43319\times 10^{-6}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Specification Checks for the Current Discussion}
+
+\begin{enumerate}
+\item The active one-jump technology intensity is $J_g(R)=R/\varrho$, not $R$ directly.  With $\varrho=746.67$, the scaling of $R$ should be checked when interpreting R\&D levels and arrival rates.
+\item R\&D investment is reported by the network as a rate $i^r=I^r/K$.  Any reported R\&D level should be checked against $I^r=i^rK$ and against any plotting convention used in the density scripts.
+\item Capital volatility is currently $\sigma_d=\sigma_g=0.01$.
+\item The adjustment term is implemented as $\Gamma_j\log(1+\theta_j i^j)$.  Therefore $\Gamma_j$ enters the drift and the marginal FOC through $\Gamma_j\theta_j/(1+\theta_j i^j)$.  Before interpreting a lower $\Gamma_j$ as a lower adjustment cost, we should verify the intended normalization because lowering $\Gamma_j$ also lowers the marginal contribution of investment to capital growth in this implementation.
+\item The R\&D productivity parameter is currently $\psi_0=0.10583$.  Increasing $\psi_0$ raises the effectiveness of R\&D in the $\log R$ drift and in the R\&D FOC.
+\end{enumerate}
+
+\section{Proposed Sensitivity Runs}
+
+For the next check, the natural sensitivity cases are:
+\[
+(\sigma_d,\sigma_g)\downarrow,\qquad
+(\Gamma_d,\Gamma_g)\downarrow \text{ after confirming interpretation},\qquad
+\psi_0\uparrow.
+\]
+Each sensitivity should be run holding the one-jump structure fixed:
+\[
+\pi=1,\qquad J_g(R)=R/\varrho,\qquad
+A_g\rightarrow A_g^{\prime\prime}.
+\]
+
+\end{document}

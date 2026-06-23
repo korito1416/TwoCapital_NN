@@ -9,13 +9,15 @@ notation, Unicode Greek-letter aliases are also added to the same dictionary
 Edit values in this file to change project-wide defaults.
 """
 
+import os
+
 # Primary defaults (ASCII keys) -------------------------------------------------
 
 PARAMS = {
     # 1) Table: State Variable Initial Values and Ranges
     "K0": 880,
     "Z0": 0.7,
-    "Y0": 1.1,
+    "Y0": 1.2,
     "R0": 11.2,
     
     ## Training ranges
@@ -61,3 +63,39 @@ PARAMS = {
     "r1": 1.5,    "r2": 0.36,
     "y_lower": 1.5,      "y_upper": 2.5      
 }
+
+
+# Run-specific sensitivity overrides ------------------------------------------
+
+# Slurm sensitivity jobs use these environment variables so the baseline
+# calibration above remains unchanged.  Because model classes copy PARAMS at
+# construction time, applying the overrides here also makes export_parameters()
+# record the actual calibration used by each stage.
+_ENVIRONMENT_OVERRIDES = {
+    "MODEL_SIGMA_D": "σ_d",
+    "MODEL_SIGMA_G": "σ_g",
+    "MODEL_GAMMA_D": "Γ_d",
+    "MODEL_GAMMA_G": "Γ_g",
+    "MODEL_THETA_D": "θ_d",
+    "MODEL_THETA_G": "θ_g",
+    "MODEL_PSI0": "ψ0",
+}
+
+for environment_name, parameter_name in _ENVIRONMENT_OVERRIDES.items():
+    raw_value = os.environ.get(environment_name)
+    if raw_value not in (None, ""):
+        PARAMS[parameter_name] = float(raw_value)
+
+if PARAMS["θ_d"] <= 0.0 or PARAMS["θ_g"] <= 0.0:
+    raise ValueError("theta_d and theta_g must be positive")
+
+
+def investment_rate_activation(theta):
+    """Return the bounded control activation compatible with log(1 + theta*i)."""
+    import tensorflow as tf
+
+    theta = float(theta)
+    if theta <= 0.0:
+        raise ValueError("theta must be positive")
+
+    return lambda x: 1.0 - (1.0 + 1.0 / theta) / (tf.exp(2.0 * x) + 1.0)

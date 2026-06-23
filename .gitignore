@@ -5,11 +5,43 @@ bash/
 job-outs/
 job-out*
 
-# Ignore generic output folders
+# Ignore model outputs, simulation results, and generated analysis artifacts
 output/
+output*/
 output_001/
+output_dgm_001/
+output_largebatch_001/
+output_sensitivity_001/
 output_SITE_Pretrain/
-output_noNBERPretrain/ 
+output_noNBERPretrain/
+SimulationResults/
+SimulationResults*/
+SimulationDeterministic/
+SimulationDeterministicPlot/
+SimulationResultsPlot/
+SVRDDecomposition/
+pretrained/*
+!pretrained/README.md
+!pretrained/MANIFEST.sha256
+
+# Ignore TensorFlow / checkpoint / numerical binary outputs
+events.out.tfevents*
+*.ckpt*
+*.h5
+*.keras
+*.npy
+*.npz
+
+# Ignore generated run/audit logs
+*_jobs_*.csv
+*_audit_*.csv
+*_history_summary.csv
+control_density_plot_runs.csv
+marginal_density_plot_runs.csv
+
+# Ignore Python runtime artifacts
+__pycache__/
+*.py[cod]
 
 # Ignore any Slurm / task output files
 *.out

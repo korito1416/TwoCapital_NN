@@ -64,6 +64,12 @@ if [ -z "${STAGE:-}" ]; then
     exit 2
 fi
 
+if [[ "$STAGE" == "PostDamageIntermTech" || "$STAGE" == "PreDamageIntermTech" ]] \
+    && awk -v pi="$TECH_JUMP_PROBABILITY" 'BEGIN { exit !(pi >= 1.0 - 1e-12) }'; then
+    echo "Intermediate technology stage ${STAGE} is invalid when pi=${TECH_JUMP_PROBABILITY}." >&2
+    exit 2
+fi
+
 case "$STAGE" in
     PostDamagePostTech|PostDamageIntermTech|PostDamagePreTech|PreDamagePostTech|PreDamageIntermTech|PreDamagePreTech)
         MODEL="${MODEL_DIR}/${STAGE}.py"

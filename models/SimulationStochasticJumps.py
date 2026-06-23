@@ -148,11 +148,12 @@ def make_nn_configs(num_hidden_layers=4, num_neurons=32):
 
 
 class RegimeModels:
-    def __init__(self, export_folder, xi, batch_size=128):
+    def __init__(self, export_folder, xi, batch_size=128, include_all_stages=False):
         self.export_folder = os.path.abspath(export_folder)
         self.xi = float(xi)
         self.log_xi = float(np.log(self.xi))
         self.batch_size = int(batch_size)
+        self.include_all_stages = bool(include_all_stages)
         self.tech_jump_intensity_scale = infer_tech_jump_intensity_scale(self.export_folder)
         self.pi = infer_tech_jump_probability(self.export_folder)
         self.one_tech_jump_mode = infer_one_tech_jump_mode(self.export_folder)
@@ -191,7 +192,11 @@ class RegimeModels:
             "PreDamagePreTech",
         ]
         optional_interm_stages = ["PostDamageIntermTech", "PreDamageIntermTech"]
-        stages = required_stages + ([] if self.one_tech_jump_mode else optional_interm_stages)
+        stages = required_stages + (
+            optional_interm_stages
+            if self.include_all_stages or not self.one_tech_jump_mode
+            else []
+        )
 
         for stage in stages:
             if not checkpoint_exists(self.export_folder, stage):
