@@ -1,0 +1,253 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\newtheorem{remark}{Remark}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\E}{\mathcal E}
+\newcommand{\A}{\mathcal A}
+\setlength{\parindent}{0pt}\setlength{\parskip}{6pt}
+
+\title{Post-Damage, Post-Technology Climate--Economy Model:\\
+Derivation of the Robust HJB, FOCs, and the Finite-Difference Scheme}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-3em}
+
+This note derives, from first principles, the post-damage post-technology regime of the
+Barnett--Brock--Hansen--Hu--Huang (2025) climate--economy model and matches it term-for-term
+to the production solver \texttt{models/PostDamagePostTech.py}. It extends the two-capital
+benchmarks (\texttt{benchmarks/two\_capital\_*}) by adding the \emph{climate} block: a
+temperature state $Y$ driven by dirty-capital emissions, a convex damage function $N(Y)$, and
+Hansen--Sargent robustness on all three Brownian shocks. ``Post-tech'' removes the R\&D control
+and the $\log R$ state ($A_g$ is fixed at the breakthrough value $A_g''$); ``post-damage''
+removes all jumps. The result is a genuine \emph{three-dimensional} HJB in $(\log K, Z, Y)$
+(climate breaks the degree-one homogeneity that reduced the two-capital model to $1$D), with
+$\lambda_3$ (damage curvature) and $\log\xi$ (robustness) as pseudo-states.
+
+\section{Setup}
+
+\paragraph{Capital.} Two stocks $K^d,K^g$ with log adjustment costs and multiplicative
+Brownian shocks (as in the shock benchmark),
+\[
+\frac{\dd K^j_t}{K^j_t}=\phi_j(i^j)\,\dd t+\sigma_j\,\dd W^j_t,\qquad
+\phi_j(i)=\alpha_j+\Gamma_j\log(1+\theta_j i),\quad j\in\{d,g\},
+\]
+$W^d\perp W^g$, $A_g\equiv A_g''$. States $\log K=\log(K^d+K^g)$, $Z=K^g/(K^d+K^g)$, so
+$K^d=(1-Z)K$, $K^g=ZK$.
+
+\paragraph{Climate.} Cumulative emissions raise the temperature anomaly $Y$. Emissions are
+proportional to dirty output, $\E_t=\eta A_d K^d=\eta A_d(1-Z)K$, and
+\[
+\dd Y_t=\E_t\big(\bar\theta\,\dd t+\varsigma\,\dd W^y_t\big),\qquad W^y\perp(W^d,W^g),
+\]
+so $Y$ has drift $\bar\theta\,\E_t$ and diffusion $\varsigma\,\E_t$. Note $\E_t\propto K$ in
+\emph{levels}: warming scales with the size of the economy. This is what breaks homogeneity.
+
+\paragraph{Damages.} A convex damage function $N(Y)\ge1$ scales consumption down. In the
+post-damage regime the curvature has already jumped, so
+\[
+\log N(Y)=\lambda_1 Y+\tfrac{\lambda_2}{2}Y^2+\tfrac{\lambda_3}{2}(Y-\bar y)^2,
+\qquad
+(\log N)_Y=\lambda_1+\lambda_2 Y+\lambda_3(Y-\bar y),\quad (\log N)_{YY}=\lambda_2+\lambda_3,
+\]
+with $\bar y=y_{\text{upper}}=2.5$ and $\lambda_3=\lambda_3(\ell)$ the realised damage curvature.
+
+\paragraph{Preferences and robustness.} The planner has logarithmic felicity over
+damage-adjusted consumption $C/N(Y)$, $C=(A_d-i^d)K^d+(A_g''-i^g)K^g$ (no $-i^r$ term: post-tech),
+and distrusts the Brownian drifts. Under an alternative model indexed by distortions
+$h=(h_d,h_g,h_y)$ each Brownian gains a drift, $\dd W^\bullet=h_\bullet\dd t+\dd\widetilde W^\bullet$,
+penalised by relative entropy with multiplier $\xi$. The robust value is
+\[
+V=\max_{i^d,i^g}\ \min_{h}\ \mathbb E\!\int_0^\infty e^{-\delta t}
+\Big[\delta\log\tfrac{C_t}{N(Y_t)}+\tfrac{\xi}{2}\,|h_t|^2\Big]\dd t,
+\qquad \tfrac{C}{K}\equiv c=(A_d-i^d)(1-Z)+(A_g''-i^g)Z.
+\]
+
+\section{It\^o reduction to $(\log K,Z,Y)$}
+
+The $(\log K,Z)$ reduction is identical to the shock benchmark (the climate shock is
+independent and does not touch $K$ or $Z$). Writing $\phi_d,\phi_g$ at the optimal controls:
+\begin{align*}
+\dd\log K&=\Big[(1-Z)\phi_d+Z\phi_g-\tfrac12\big(\sigma_d^2(1-Z)^2+\sigma_g^2Z^2\big)
++(1-Z)\sigma_d h_d+Z\sigma_g h_g\Big]\dd t+(\cdots)\dd\widetilde W,\\
+\dd Z&=Z(1-Z)\Big[\phi_g-\phi_d+(1-Z)\sigma_d^2-Z\sigma_g^2
++\sigma_g h_g-\sigma_d h_d\Big]\dd t+(\cdots)\dd\widetilde W,
+\end{align*}
+with quadratic variations $\dd\langle\log K\rangle=(\sigma_d^2(1-Z)^2+\sigma_g^2Z^2)\dd t$,
+$\dd\langle Z\rangle=Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)\dd t$,
+$\dd\langle\log K,Z\rangle=[-Z(1-Z)^2\sigma_d^2+Z^2(1-Z)\sigma_g^2]\dd t$, and the $Y$-block
+$\dd\langle Y\rangle=\varsigma^2\E^2\dd t$, $\dd\langle Y,\log K\rangle=\dd\langle Y,Z\rangle=0$.
+
+The (distorted) generator acting on a smooth $V(\log K,Z,Y)$ is therefore
+\begin{align*}
+\A^h V=\;
+&\big[(1-Z)\phi_d+Z\phi_g-\tfrac{D}{2}+(1-Z)\sigma_d h_d+Z\sigma_g h_g\big]V_{\log K}
++\tfrac{D}{2}V_{\log K\log K}\\
+&+Z(1-Z)\big[\phi_g-\phi_d+(1-Z)\sigma_d^2-Z\sigma_g^2+\sigma_g h_g-\sigma_d h_d\big]V_Z
++\tfrac12 Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)V_{ZZ}\\
+&+\big[-Z(1-Z)^2\sigma_d^2+Z^2(1-Z)\sigma_g^2\big]V_{\log K,Z}
++(\bar\theta+\varsigma h_y)\E\,V_Y+\tfrac12\varsigma^2\E^2\,V_{YY},
+\end{align*}
+where $D\equiv\sigma_d^2(1-Z)^2+\sigma_g^2Z^2$ and $\E=\eta A_d(1-Z)K$, $K=e^{\log K}$.
+
+\section{The damage transform $v=V+\log N$}
+
+Solving for $V$ directly is awkward because the felicity carries $-\delta\log N(Y)$. Define the
+transformed value
+\[
+\boxed{\,v\equiv V+\log N(Y)\quad\Longleftrightarrow\quad V=v-\log N(Y).\,}
+\]
+(The production docstring's ``$v=V-\log N$'' is a sign mislabel: the code's own math---the
+undamaged flow $\delta\log C$ with no $\log N$, the $V_Y=v_Y-(\log N)_Y$ used in $h_y$, and the
+$-\,$\texttt{v\_logN\_term} drag---is consistent only with $v=V+\log N$, verified by the
+cancellation below and symbolically.) Since $\log N$ depends only on $Y$:
+$V_{\log K}=v_{\log K}$, $V_Z=v_Z$, but
+$V_Y=v_Y-(\log N)_Y$ and $V_{YY}=v_{YY}-(\log N)_{YY}$. The HJB
+$\delta V=\max\min\{\delta\log C-\delta\log N+\A^h V+\tfrac{\xi}{2}|h|^2\}$ becomes, after
+substituting $V=v-\log N$ and cancelling the two $-\delta\log N$ terms,
+\[
+\boxed{\;
+\delta v=\max_{i^d,i^g}\min_h\Big\{\delta\log C+\A^h v-\A^h_Y(\log N)+\tfrac{\xi}{2}|h|^2\Big\},
+\;}
+\]
+where $\A^h_Y(\log N)=(\log N)_Y(\bar\theta+\varsigma h_y)\E+(\log N)_{YY}\tfrac12\varsigma^2\E^2$
+is the only piece of $\A^h(\log N)$ that survives ($\log N$ depends on $Y$ alone). Writing the
+two climate coefficients used below,
+\[
+v_y^{\text{drift}}\equiv(\bar\theta+\varsigma h_y)\E,
+\qquad
+v_y^{\text{diff}}\equiv\tfrac12\varsigma^2\E^2,
+\]
+the damage drag is $-\big[(\log N)_Y\,v_y^{\text{drift}}+(\log N)_{YY}\,v_y^{\text{diff}}\big]$,
+matching \texttt{v\_logN\_term} in the code (lines 235, 243). Crucially the felicity in the
+$v$-HJB is the \emph{undamaged} $\delta\log C=\delta(\log c+\log K)$ (code line 207).
+
+\section{Worst-case distortions and the robust HJB}
+
+The inner $\min_h$ is separable and quadratic. The $h$-linear terms in
+$\A^h v-\A^h_Y(\log N)+\tfrac{\xi}{2}|h|^2$ regroup, using $V_Y=v_Y-(\log N)_Y$, into
+exposures $\E_d,\E_g,\E_y$:
+\[
+\E_d=(1-Z)\sigma_d\,(v_{\log K}-Z v_Z),\quad
+\E_g=Z\sigma_g\,(v_{\log K}+(1-Z)v_Z),\quad
+\E_y=\varsigma\,\E\,\big(v_Y-(\log N)_Y\big),
+\]
+and the FOC $\E_\bullet+\xi h_\bullet=0$ gives the worst-case drifts
+\[
+\boxed{\;
+h_d=-\tfrac1\xi(1-Z)\sigma_d(v_{\log K}-Z v_Z),\quad
+h_g=-\tfrac1\xi Z\sigma_g(v_{\log K}+(1-Z)v_Z),\quad
+h_y=-\tfrac1\xi\varsigma\E\big(v_Y-(\log N)_Y\big).
+\;}
+\]
+These match code lines 192--193, 197 \emph{except} that the code's $h_y$ uses
+$(\log N)_Y\to\lambda_1+\lambda_2Y$ (pre-damage slope), dropping the $\lambda_3(Y-\bar y)$ piece;
+the regime-consistent value (used in \texttt{v\_logN\_term}) is
+$(\log N)_Y=\lambda_1+\lambda_2Y+\lambda_3(Y-\bar y)$ (see Remark~\ref{rem:hy}). With the
+worst case substituted the inner problem contributes $-\tfrac1{2\xi}(\E_d^2+\E_g^2+\E_y^2)$,
+but the solver keeps the un-substituted form (the $h_\bullet\E_\bullet$ couplings plus
+$\tfrac{\xi}{2}|h|^2$, code lines 240, 242); the two are algebraically identical.
+
+Collecting everything, the \textbf{robust reduced HJB} (residual $=$ rhs $-\,\delta v$, code
+lines 237--243) is
+\[
+\boxed{
+\begin{aligned}
+0=\;&\delta(\log c+\log K)\\
+&+\big[(1-Z)\phi_d+Z\phi_g-\tfrac{D}{2}\big]v_{\log K}+\tfrac{D}{2}v_{\log K\log K}\\
+&+Z(1-Z)\big[\phi_g-\phi_d+(1-Z)\sigma_d^2-Z\sigma_g^2\big]v_Z
++\tfrac12Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)v_{ZZ}\\
+&+\big[-Z(1-Z)^2\sigma_d^2+Z^2(1-Z)\sigma_g^2\big]v_{\log K,Z}\\
+&+v_y^{\text{drift}}\,v_Y+v_y^{\text{diff}}\,v_{YY}
++h_d\E_d+h_g\E_g+\tfrac{\xi}{2}\big(h_d^2+h_g^2+h_y^2\big)\\
+&-\Big[(\lambda_1+\lambda_2Y+\lambda_3(Y-\bar y))\,v_y^{\text{drift}}
++(\lambda_2+\lambda_3)\,v_y^{\text{diff}}\Big]-\delta v,
+\end{aligned}}
+\]
+with $D=\sigma_d^2(1-Z)^2+\sigma_g^2Z^2$, $\E=\eta A_d(1-Z)K$,
+$v_y^{\text{drift}}=(\bar\theta+\varsigma h_y)\E$, $v_y^{\text{diff}}=\tfrac12\varsigma^2\E^2$,
+$\phi_j=\alpha_j+\Gamma_j\log(1+\theta_ji^j)$, $c=(A_d-i^d)(1-Z)+(A_g''-i^g)Z$.
+$\xi\to\infty$ kills the $h$-terms (no robustness); $\sigma,\varsigma\to0$ and $N\equiv1$ recover
+the deterministic two-capital model.
+
+\section{First-order conditions}
+
+Only the felicity and the $\phi_j$ drifts depend on $i^j$ ($\E$ depends on $Z$, not on $i$;
+$h$ enters only through $q$'s). Differentiating, with $\partial c/\partial i^d=-(1-Z)$ and
+$\phi_d$ appearing with coefficient $(1-Z)v_{\log K}-Z(1-Z)v_Z=(1-Z)(v_{\log K}-Zv_Z)$,
+\[
+-\frac{\delta(1-Z)}{c}+(1-Z)\phi_d'(i^d)\,(v_{\log K}-Z v_Z)=0,
+\]
+and symmetrically for $i^g$. Hence the FOCs (code lines 249--253)
+\[
+\boxed{\;
+\frac{\delta}{c}=\frac{\Gamma_d\theta_d}{1+\theta_d i^d}\,(v_{\log K}-Z v_Z)
+=\frac{\Gamma_g\theta_g}{1+\theta_g i^g}\,(v_{\log K}+(1-Z)v_Z).
+\;}
+\]
+Unlike the two-capital case $v_{\log K}\neq1$ here (no homogeneity), so the marginal values
+are $\tilde q_d=v_{\log K}-Zv_Z$ and $\tilde q_g=v_{\log K}+(1-Z)v_Z$ and the closed-form
+$c(Z)$ no longer applies; the controls solve the two FOCs jointly with $c$.
+
+\section{Boundary conditions and monotonicity}
+
+\textbf{$Z\in\{0,1\}$}: the $v_Z,v_{ZZ},v_{\log K,Z}$ coefficients carry $Z(1-Z)$ factors and
+vanish, leaving a $2$D $(\log K,Y)$ problem (one-capital economy, dirty-only at $Z=0$,
+green-only at $Z=1$; emissions $\E=\eta A_d(1-Z)K$ vanish at $Z=1$). \textbf{$Y$}: solved on
+$[0,4]$. Economically the \emph{true} value must be non-increasing in temperature for
+$Y>\bar y$, $V_Y\le0$, equivalently $v_Y\le(\log N)_Y$. The production soft penalty
+\texttt{loss\_dv\_dY} (code lines 301--308) instead targets $v_Y>0$ directly, i.e.\ it imposes
+the \emph{stronger surrogate} $v_Y\le0$ on the transformed value (it omits the $(\log N)_Y$
+shift, so it actually enforces $V_Y\le-(\log N)_Y<0$; the omitted shift is $\approx0.01$ at
+$\bar y$ but grows to $\approx0.5$ at $\lambda_3=\tfrac13,\,Y=4$). We impose the exact economic
+condition $V_Y\le0$, i.e.\ $v_Y\le(\log N)_Y$ with the regime-consistent slope.
+\textbf{$\log K$}: solved on $[4,7]$; Neumann/extrapolation at the ends.
+
+\begin{remark}[the $h_y$ $\lambda_3$ discrepancy]\label{rem:hy}
+$(\log N)_Y$ must be regime-consistent. The damage drag \texttt{v\_logN\_term} uses the
+post-damage slope $\lambda_1+\lambda_2Y+\lambda_3(Y-\bar y)$, but the production $h_y$
+(line 197) uses only $\lambda_1+\lambda_2Y$. We use the consistent post-damage slope in both;
+the difference shifts the worst-case climate drift and the value at high $Y$. (Flagged in
+\texttt{PAPER\_HJB\_REFERENCE.md} and the project audit.)
+\end{remark}
+
+\section{Finite-difference scheme}
+
+The production solver \texttt{models/PostDamagePostTech.py} is a DGM neural net. As in the
+two-capital benchmarks we additionally build an \emph{independent} finite-difference reference
+(this folder) to validate it on a controlled ground truth. The FD reference
+solves the BVP at fixed $(\lambda_3,\xi)$ on a tensor grid
+$\log K_i\times Z_j\times Y_k$ ($i,j,k$), by a semi-implicit false-transient
+$\partial_\tau v=\text{HJB}[v]$ with frozen (policy-iterated) controls. Per pseudo-time step:
+
+\emph{(i) Controls.} Given the current $v$ and its first derivatives, solve the two FOCs for
+$i^d,i^g$ (1D rootfind in each, or the closed inverse of $\phi_j'$), clamped to keep
+$1+\theta_ji^j>0$ and $c>0$.
+
+\emph{(ii) Derivatives.} Central differences for the diffusions
+$v_{\log K\log K},v_{ZZ},v_{YY}$ and the cross term $v_{\log K,Z}$
+($\tfrac{v_{i+1,j+1}-v_{i+1,j-1}-v_{i-1,j+1}+v_{i-1,j-1}}{4\,\Delta\log K\,\Delta Z}$);
+\emph{upwind} differences for the drift terms ($v_{\log K},v_Z,v_Y$), forward where the
+(signed) drift coefficient is positive and backward where negative, which yields an M-matrix.
+
+\emph{(iii) Implicit update.} Treat the diagonal diffusion/drift terms implicitly and the
+off-diagonal cross term and the $h$/damage source explicitly:
+$\big(\tfrac1{\Delta\tau}+\delta\big)v^{\text{new}}-\big[\text{diag.\ diffusion+upwind drift}\big]v^{\text{new}}
+=\tfrac1{\Delta\tau}v^{\text{old}}+\text{flow}+\text{cross}+\text{$h$-couplings}-\text{damage drag}.$
+The 7-point stencil (implicit part) is solved by a sparse banded/iterative solve; iterate
+$\tau$ to steady state. The HJB residual is reported with central derivatives as the accuracy
+check. (At $\sigma,\varsigma$ small the diffusion is weak, so the $\log K,Z$ drifts dominate and
+upwinding is essential, exactly as in the two-capital benchmark.)
+
+\paragraph{Parameters} (\texttt{models/params.py}): $\delta=0.01$;
+$(\alpha,\Gamma,\theta,\sigma)_d=(\alpha,\Gamma,\theta,\sigma)_g=(-0.035,0.060,16.7,0.01)$;
+$A_d=0.1303$, $A_g''=0.1567$; $\bar\theta=1.86/1000$, $\eta=0.291$,
+$\varsigma=1.2\cdot1.86/1000$; $\lambda_1=1.7675\!\times\!10^{-4}$, $\lambda_2=2\cdot0.0022$,
+$\lambda_3\in\{0,\tfrac1{12},\tfrac16,\tfrac14,\tfrac13\}$, $\bar y=2.5$; grids
+$\log K\in[4,7]$, $Z\in[0.01,0.99]$, $Y\in[0,4]$, $\log\xi\in[-3,5]$.
+
+\end{document}
