@@ -194,7 +194,7 @@ class PostDamagePostTechModel:
 
         # We are solving for v = V - log N, so the damage term in the HJB is modified accordingly
         # dV/dY = dv_dY - d(log N)/dY and d(log N)/dY = λ1 + λ2 * Y  
-        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
+        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y + λ3 * (Y - y_upper)   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
 
 
         ######################

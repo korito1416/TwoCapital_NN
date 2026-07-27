@@ -1,5 +1,5 @@
 """
-Solve  post-damage-pre-technology  model.
+Solve  pre-damage-intermediate-technology  model.
 
 The value function we are solving is v = V - log N.  
 """
@@ -10,17 +10,17 @@ import pathlib
 import time
 from feedforward_subnet import (
     FeedForwardSubNet,
-    distill_from_baseline,
     large_sample_validation,
     sample_state_columns,
     setup_optimizers,
     validation_score,
 )
-from params import PARAMS 
+from params import PARAMS, investment_rate_activation
+from pretrained_paths import legacy_nber_folder
 
-
-class PostDamagePreTechModel:
-    """Post-damage & pre-technology HJB.
+class PreDamageIntermTechModel:
+    """
+    Pre-damage & Intermediate-technology HJB.
     """
 
     def __init__(self, params):
@@ -31,6 +31,7 @@ class PostDamagePreTechModel:
 
         # ensure optimizers are prepared
         setup_optimizers(self.params)
+
         
         self.params['tensorboard'] = bool(self.params.get('tensorboard', True))
         
@@ -39,20 +40,16 @@ class PostDamagePreTechModel:
         self.i_d_nn  = FeedForwardSubNet(self.params['i_d_nn_config'])
         self.i_r_nn  = FeedForwardSubNet(self.params['i_r_nn_config'])
 
-        ### Load weights from PostDamagePostTech and PostDamageIntermTech model
-        self.v_PostDamagePostTech_nn    = FeedForwardSubNet(self.params['v_nn_config'])
-        self.v_PostDamagePostTech_nn.build((None, 7))
-        self.v_PostDamagePostTech_nn.load_weights(self.params["v_PostDamagePostTech_nn_path"] )
-
-        self.use_intermediate_tech_jump = float(self.params.get("π", PARAMS.get("π", 0.04))) < 1.0 - 1e-12
-        if self.use_intermediate_tech_jump:
-            self.v_PostDamageIntermTech_nn    = FeedForwardSubNet(self.params['v_nn_config'])
-            self.v_PostDamageIntermTech_nn.build((None, 8))
-            self.v_PostDamageIntermTech_nn.load_weights(self.params["v_PostDamageIntermTech_nn_path"] )
-        else:
-            self.v_PostDamageIntermTech_nn = None
+        ### Load weights from PostDamagePostTech and  PostDamageIntermTech model
+        self.v_PreDamagePostTech_nn    = FeedForwardSubNet(self.params['v_nn_config'])
+        self.v_PreDamagePostTech_nn.build((None, 6))
+        self.v_PreDamagePostTech_nn.load_weights(self.params["v_PreDamagePostTech_nn_path"] )
         
-        ## Create ranges for sampling later 
+        self.v_PostDamageIntermTech_nn    = FeedForwardSubNet(self.params['v_nn_config'])
+        self.v_PostDamageIntermTech_nn.build((None, 8))
+        self.v_PostDamageIntermTech_nn.load_weights(self.params["v_PostDamageIntermTech_nn_path"] )
+        
+        ## Create ranges for sampling
 
         self.params["state_intervals"] = {}
 
@@ -120,8 +117,7 @@ class PostDamagePreTechModel:
     @tf.function
     def pde_rhs(self, logK, Z, Y, logR, λ3, logξ):
         """
-        Y_hat is the temperature value when jump occurs. 
-        (rhs, pv, dv_dY, c, inside_log_i_g, inside_log_i_d,   FOC_g, FOC_d)
+        Y_hat is the temperature value when jump occurs.  
         """
         ###############
         #### load parameters into local variables 
@@ -170,15 +166,13 @@ class PostDamagePreTechModel:
         ###############
         
         # X = tf.concat([logK, Z, Y, logR, λ3, logξ], 1)
-         
-        X = tf.concat([logK, Z, Y, logR, λ3, logξ, logξ, logξ], 1)
-        
+        X = tf.concat([logK, Z, Y, logR,   logξ, logξ, logξ], 1)
         # Controls defined in section 3.4
         v = self.v_nn(X)
         i_g = self.i_g_nn(X)
         i_d = self.i_d_nn(X)
-        i_r = tf.exp(-self.i_r_nn(X)) # I_r / K
-        # i_r =  self.i_r_nn(X) 
+        i_r = tf.exp(-  self.i_r_nn(X) ) # I_r / K
+        # i_r =   self.i_r_nn(X) 
         # State Variables Transformations
         ξ = tf.exp(logξ)
         K = tf.exp(logK)
@@ -210,7 +204,7 @@ class PostDamagePreTechModel:
 
         # We are solving for v = V - log N, so the damage term in the HJB is modified accordingly
         # dV/dY = dv_dY - d(log N)/dY and d(log N)/dY = λ1 + λ2 * Y  
-        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y + λ3 * (Y - y_upper)   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
+        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
 
         h_r = - 1.0 / ξ *  dv_dlogR   * σ_κ 
         
@@ -220,7 +214,7 @@ class PostDamagePreTechModel:
         #######################
         pv   =   δ * v
 
-        c = ( A_d  - i_d) * (1 - Z) + (A_g - i_g) * Z -i_r
+        c = ( A_d  - i_d) * (1 - Z) + (A_g_prime - i_g) * Z -i_r
         inside_log = tf.reshape(tf.math.maximum(c, 1e-8), (-1, 1))
         flow = δ * (tf.math.log(inside_log) + logK)
 
@@ -250,9 +244,9 @@ class PostDamagePreTechModel:
         v_yy_term = 0.5 * ϛ**2 * (η * A_d * (1 - Z) * K)**2
         
         # Damage function is from the 2024 SITE Paper.
-        v_logN_term = (λ1 + λ2 * Y + λ3 * (Y - y_upper)) * v_y_term + (λ2 + λ3) * v_yy_term
+        v_logN_term = (λ1 + λ2 * Y  ) * v_y_term + (λ2  ) * v_yy_term
 
-        v_logR_term = - ζ + ψ0 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )  - 0.5 * σ_κ**2    +   σ_κ * h_r
+        v_logR_term = - ζ + ψ0 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )  + 0.5 * σ_κ**2    +   σ_κ * h_r
         v_logRlogR_term = 0.5 * σ_κ**2 
          
         ######################
@@ -260,17 +254,23 @@ class PostDamagePreTechModel:
         ######################
         J_g_prime  = tech_jump_intensity_scale * (1- π) * tf.exp(logR) / varrho ; J_g_prime_prime  =  tech_jump_intensity_scale * π * tf.exp(logR) / varrho 
         
-        v_PostDamagePostTech  = self.v_PostDamagePostTech_nn( tf.concat([logK, Z, Y,  λ3, A_g_prime_prime *tf.ones(tf.shape(Y)) ,logξ, logξ], 1) )
+        v_PreDamagePostTech  = self.v_PreDamagePostTech_nn( tf.concat([logK, Z, Y, A_g_prime_prime *  tf.ones(tf.shape(Y)), logξ, logξ], 1) )
 
-        g_l_prime_prime = tf.exp(-1/ξ * (v_PostDamagePostTech - v) )
-        Jump_term = J_g_prime_prime * g_l_prime_prime * (v_PostDamagePostTech - v) + ξ * J_g_prime_prime * (1- g_l_prime_prime+ g_l_prime_prime * tf.math.log(g_l_prime_prime) )
+        g_l_prime_prime = tf.exp(-1/ξ * (v_PreDamagePostTech - v) )
 
-        if self.use_intermediate_tech_jump:
-            v_PostDamageIntermTech  = self.v_PostDamageIntermTech_nn( tf.concat([logK, Z, Y, logR, λ3, logξ, logξ, logξ], 1))
-            g_l_prime = tf.exp(-1/ξ * (v_PostDamageIntermTech - v) )
-            Jump_term += J_g_prime * g_l_prime * (v_PostDamageIntermTech - v) + ξ * J_g_prime * (1- g_l_prime+ g_l_prime * tf.math.log(g_l_prime) )
-                    
-                    
+        Jump_term = J_g_prime_prime * g_l_prime_prime * (v_PreDamagePostTech - v) + ξ * J_g_prime_prime * (1- g_l_prime_prime+ g_l_prime_prime * tf.math.log(g_l_prime_prime) )
+         
+        ## Damage Jump
+        J_d = r1 * ( tf.exp( r2 / 2 * tf.pow(Y - y_lower ,2) ) - 1  ) *  tf.cast(Y > y_lower, tf.float32 )
+
+        for l in range(L): # L is the number of damage realizations
+            λ3_l = λ3_values[l]
+            
+            v_PostDamageIntermTech  = self.v_PostDamageIntermTech_nn(  tf.concat([logK, Z, tf.ones(tf.shape(Y)) * y_upper, logR, λ3_l * tf.ones(tf.shape(Y)), logξ, logξ, logξ], 1))
+            g_l = tf.exp(-1/ξ * (v_PostDamageIntermTech - v) )
+            Jump_term +=  J_d / L * g_l * (v_PostDamageIntermTech - v) + ξ * J_d / L * (1- g_l + g_l  * tf.math.log(g_l ) )
+ 
+ 
         #####################
         ###### HJB Equation
         #####################
@@ -292,7 +292,7 @@ class PostDamagePreTechModel:
         
         FOC_d = -marginal_util_c + Γ_d * θ_d / ( inside_log_i_d ) * (dv_dlogK - Z * dv_dZ)
         FOC_g = -marginal_util_c + Γ_g * θ_g / ( inside_log_i_g )   * (dv_dlogK +  (1.0 - Z) * dv_dZ)
-        FOC_r = -marginal_util_c + ψ0 * ψ1 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )* dv_dlogR  /i_r
+        FOC_r = -marginal_util_c  + ψ0 * ψ1 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )* dv_dlogR /i_r
         
         return rhs, pv, dv_dY, c, 1.0 + θ_g * i_g , 1.0 + θ_d * i_d,  FOC_d, FOC_g , FOC_r , dv_dlogR
 
@@ -304,7 +304,7 @@ class PostDamagePreTechModel:
         ## It depends on which NN it is training. Controls and value functions have different
         ## objectives.
         
-        rhs, pv, dv_dY, c, inside_log_i_g , inside_log_i_d ,  FOC_d, FOC_g,  FOC_r ,dv_dlogR  = self.pde_rhs(logK, Z, Y, logR, λ3, logξ)
+        rhs, pv, dv_dY, c, inside_log_i_g , inside_log_i_d ,  FOC_d, FOC_g,  FOC_r  , dv_dlogR = self.pde_rhs(logK, Z, Y, logR, λ3, logξ)
 
         epsilon = 10e-8
         
@@ -350,7 +350,7 @@ class PostDamagePreTechModel:
                        + tf.sqrt(tf.reduce_mean(tf.square(FOC_g ))) \
                         + tf.sqrt(tf.reduce_mean(tf.square(FOC_d  ))) \
                         + tf.sqrt(tf.reduce_mean(tf.square(FOC_r  ))) \
-                        + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY  )))  + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dlogR  ))) 
+                        + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY  )))  +  tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dlogR  ))) 
                     
                 return loss
 
@@ -396,7 +396,7 @@ class PostDamagePreTechModel:
 
         ## Second, train controls
         grad, loss_c_train = self.grad(logK, Z, Y, logR, λ3, logξ, compute_control= True, training=True)
-        self.params["optimizers"][1].apply_gradients(zip(grad, self.i_g_nn.trainable_variables + self.i_d_nn.trainable_variables  + self.i_r_nn.trainable_variables))
+        self.params["optimizers"][1].apply_gradients(zip(grad, self.i_g_nn.trainable_variables + self.i_d_nn.trainable_variables + self.i_r_nn.trainable_variables))
 
         return loss_v_train, loss_c_train
     
@@ -409,7 +409,7 @@ class PostDamagePreTechModel:
         # Prepare to store best neural networks and initialize networks
         min_loss = float("inf")
         
-        n_inputs = 8
+        n_inputs = 7
 
         best_v_nn    = FeedForwardSubNet(self.params['v_nn_config'])
         best_v_nn.build((None, n_inputs)) 
@@ -433,19 +433,25 @@ class PostDamagePreTechModel:
         best_i_r_nn.set_weights(self.i_r_nn.get_weights())
  
  
-        # self.v_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/v_nn_checkpoint_PostDamagePostTech')
-        # self.i_g_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_g_nn_checkpoint_PostDamagePostTech')
-        # self.i_d_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_d_nn_checkpoint_PostDamagePostTech')
-        # self.i_r_nn.load_weights( self.params["job_name"]  + '/PostDamageIntermTech/i_r_nn_checkpoint_PostDamageIntermTech')
+        # self.v_nn.load_weights( self.params["job_name"]  + '/PreDamagePostTech/v_nn_checkpoint_PreDamagePostTech')
+        # self.i_g_nn.load_weights( self.params["job_name"]  + '/PreDamagePostTech/i_g_nn_checkpoint_PreDamagePostTech')
+        # self.i_d_nn.load_weights( self.params["job_name"]  + '/PreDamagePostTech/i_d_nn_checkpoint_PreDamagePostTech')
+        # self.i_r_nn.load_weights( self.params["job_name"]  + '/PostDamagePreTech/i_r_nn_checkpoint_PostDamagePreTech')
  
-        # DGM checkpoints are architecture-specific; only resume from another DGM run.
+        NBER_folder = legacy_nber_folder(required=self.params.get("pretrained_path") is None)
+        if NBER_folder is not None:
+            self.v_nn.load_weights( NBER_folder + "/pre_tech_pre_damage/v_nn_checkpoint_pre_tech_pre_damage" )
+            self.i_g_nn.load_weights( NBER_folder  + "/pre_tech_pre_damage/i_g_nn_checkpoint_pre_tech_pre_damage")
+            self.i_d_nn.load_weights( NBER_folder + "/pre_tech_pre_damage/i_d_nn_checkpoint_pre_tech_pre_damage" )
+            self.i_r_nn.load_weights(NBER_folder+  "/pre_tech_pre_damage/i_I_nn_checkpoint_pre_tech_pre_damage" )
+
+ 
+        ## Load pretrained weights
         if self.params['pretrained_path'] is not None:
-            self.v_nn.load_weights( self.params["pretrained_path"]  + '/PostDamagePreTech/v_nn_checkpoint_PostDamagePreTech')
-            self.i_g_nn.load_weights( self.params["pretrained_path"]  + '/PostDamagePreTech/i_g_nn_checkpoint_PostDamagePreTech')
-            self.i_d_nn.load_weights( self.params["pretrained_path"]  + '/PostDamagePreTech/i_d_nn_checkpoint_PostDamagePreTech')
-            self.i_r_nn.load_weights( self.params["pretrained_path"]  + '/PostDamagePreTech/i_r_nn_checkpoint_PostDamagePreTech')
-        else:
-            distill_from_baseline(self, "PostDamagePreTech", n_inputs)
+            self.v_nn.load_weights( self.params["pretrained_path"]  + '/PreDamageIntermTech/v_nn_checkpoint_PreDamageIntermTech')
+            self.i_g_nn.load_weights( self.params["pretrained_path"]  + '/PreDamageIntermTech/i_g_nn_checkpoint_PreDamageIntermTech')
+            self.i_d_nn.load_weights( self.params["pretrained_path"]  + '/PreDamageIntermTech/i_d_nn_checkpoint_PreDamageIntermTech')
+            self.i_r_nn.load_weights( self.params["pretrained_path"]  + '/PreDamageIntermTech/i_r_nn_checkpoint_PreDamageIntermTech')
 
         # Preserve the loaded checkpoint if fine-tuning becomes nonfinite.
         best_v_nn.set_weights(self.v_nn.get_weights())
@@ -568,10 +574,10 @@ class PostDamagePreTechModel:
         self.i_d_nn.set_weights(best_i_d_nn.get_weights())
         self.i_r_nn.set_weights(best_i_r_nn.get_weights())
         ## Export last check point
-        self.v_nn.save_weights( self.params["export_folder"] + '/v_nn_checkpoint_PostDamagePreTech')
-        self.i_g_nn.save_weights( self.params["export_folder"] + '/i_g_nn_checkpoint_PostDamagePreTech')
-        self.i_d_nn.save_weights( self.params["export_folder"] + '/i_d_nn_checkpoint_PostDamagePreTech')
-        self.i_r_nn.save_weights( self.params["export_folder"] + '/i_r_nn_checkpoint_PostDamagePreTech')
+        self.v_nn.save_weights( self.params["export_folder"] + '/v_nn_checkpoint_PreDamageIntermTech')
+        self.i_g_nn.save_weights( self.params["export_folder"] + '/i_g_nn_checkpoint_PreDamageIntermTech')
+        self.i_d_nn.save_weights( self.params["export_folder"] + '/i_d_nn_checkpoint_PreDamageIntermTech')
+        self.i_r_nn.save_weights( self.params["export_folder"] + '/i_r_nn_checkpoint_PreDamageIntermTech')
 
         ## Save training history
 
@@ -695,9 +701,10 @@ if __name__ == '__main__':
 
     i_d_nn_config = {"num_hiddens" : [num_neurons for _ in range(num_hidden_layers)], "use_bias" : True, "activation" : hidden_layer_activations[2], "dim" : 1, "nn_name" : "i_d_nn"}
     i_d_nn_config["final_activation"] = output_layer_activations[2]
-    
+        
     i_r_nn_config = {"num_hiddens" : [num_neurons for _ in range(num_hidden_layers)], "use_bias" : True, "activation" : hidden_layer_activations[3], "dim" : 1, "nn_name" : "i_r_nn"}
     i_r_nn_config["final_activation"] = output_layer_activations[3]
+    
     
     params = {"batch_size" : batch_size, "learning_rates":learning_rates,
     "v_nn_config" : v_nn_config, "i_g_nn_config" : i_g_nn_config, "i_d_nn_config" : i_d_nn_config, "i_r_nn_config" : i_r_nn_config,
@@ -709,20 +716,20 @@ if __name__ == '__main__':
     "validation_control_weight": validation_control_weight,
     "gradient_clip_norm": gradient_clip_norm, "tensorboard": tensorboard}
 
+    params["export_folder"]  = export_folder +  "/PreDamageIntermTech"
     params["job_name"] = export_folder
-    params["export_folder"]  = export_folder +  "/PostDamagePreTech"
     params["v_PostDamagePostTech_nn_path"]  = export_folder +  "/PostDamagePostTech/v_nn_checkpoint_PostDamagePostTech"
     params["v_PreDamagePostTech_nn_path"]  = export_folder +  "/PreDamagePostTech/v_nn_checkpoint_PreDamagePostTech"
     params["v_PostDamagePreTech_nn_path"]  = export_folder +  "/PostDamagePreTech/v_nn_checkpoint_PostDamagePreTech"
     params["v_PostDamageIntermTech_nn_path"]  = export_folder +  "/PostDamageIntermTech/v_nn_checkpoint_PostDamageIntermTech"
     params["v_PreDamageIntermTech_nn_path"]  = export_folder +  "/PreDamageIntermTech/v_nn_checkpoint_PreDamageIntermTech"
-    ## i_g and i_d activations come after params because we amy want to use phi_g and phi_d
-    phi_g = 16.7
-    phi_d = 16.7
-    if output_layer_activations[1] == "custom" or output_layer_activations[2] == "custom":
-        params["i_g_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0/ phi_g) / (tf.exp(2 * x) + 1.0)
-        params["i_d_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0/ phi_d) / (tf.exp(2 * x) + 1.0)
 
-    test_model = PostDamagePreTechModel(params)
+
+    # The lower control bound is -1/theta, which keeps log(1 + theta*i) valid.
+    if output_layer_activations[1] == "custom" or output_layer_activations[2] == "custom":
+        params["i_g_nn_config"]["final_activation"] = investment_rate_activation(PARAMS["θ_g"])
+        params["i_d_nn_config"]["final_activation"] = investment_rate_activation(PARAMS["θ_d"])
+
+    test_model = PreDamageIntermTechModel(params)
     test_model.export_parameters()
     test_model.train()

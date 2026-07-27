@@ -10,13 +10,13 @@ import pathlib
 import time
 from feedforward_subnet import (
     FeedForwardSubNet,
-    distill_from_baseline,
     large_sample_validation,
     sample_state_columns,
     setup_optimizers,
     validation_score,
 )
-from params import PARAMS 
+from params import PARAMS, investment_rate_activation
+from pretrained_paths import legacy_nber_folder
 
 
 class PostDamagePreTechModel:
@@ -210,7 +210,7 @@ class PostDamagePreTechModel:
 
         # We are solving for v = V - log N, so the damage term in the HJB is modified accordingly
         # dV/dY = dv_dY - d(log N)/dY and d(log N)/dY = λ1 + λ2 * Y  
-        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y + λ3 * (Y - y_upper)   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
+        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
 
         h_r = - 1.0 / ξ *  dv_dlogR   * σ_κ 
         
@@ -252,7 +252,7 @@ class PostDamagePreTechModel:
         # Damage function is from the 2024 SITE Paper.
         v_logN_term = (λ1 + λ2 * Y + λ3 * (Y - y_upper)) * v_y_term + (λ2 + λ3) * v_yy_term
 
-        v_logR_term = - ζ + ψ0 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )  - 0.5 * σ_κ**2    +   σ_κ * h_r
+        v_logR_term = - ζ + ψ0 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )  + 0.5 * σ_κ**2    +   σ_κ * h_r
         v_logRlogR_term = 0.5 * σ_κ**2 
          
         ######################
@@ -293,8 +293,18 @@ class PostDamagePreTechModel:
         FOC_d = -marginal_util_c + Γ_d * θ_d / ( inside_log_i_d ) * (dv_dlogK - Z * dv_dZ)
         FOC_g = -marginal_util_c + Γ_g * θ_g / ( inside_log_i_g )   * (dv_dlogK +  (1.0 - Z) * dv_dZ)
         FOC_r = -marginal_util_c + ψ0 * ψ1 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )* dv_dlogR  /i_r
-        
-        return rhs, pv, dv_dY, c, 1.0 + θ_g * i_g , 1.0 + θ_d * i_d,  FOC_d, FOC_g , FOC_r , dv_dlogR
+
+        ####################
+        #### Loss preconditioner weight (always-on, frozen via stop_gradient)
+        ####################
+        eps = tf.constant(5e-3, tf.float32)
+        precond_w = tf.abs(v_logK_term) + tf.abs(v_Z_term) / tf.maximum(Z * (1.0 - Z), 1e-3) \
+            + v_logKlogK_term + v_ZZ_term / tf.maximum(Z * (1.0 - Z), 1e-3) \
+            + tf.abs(v_y_term) \
+            + tf.abs(v_logR_term) + v_logRlogR_term + eps
+        precond_w = tf.stop_gradient(precond_w)
+
+        return rhs, pv, dv_dY, c, 1.0 + θ_g * i_g , 1.0 + θ_d * i_d,  FOC_d, FOC_g , FOC_r , dv_dlogR , precond_w
 
 
     @tf.function
@@ -304,7 +314,7 @@ class PostDamagePreTechModel:
         ## It depends on which NN it is training. Controls and value functions have different
         ## objectives.
         
-        rhs, pv, dv_dY, c, inside_log_i_g , inside_log_i_d ,  FOC_d, FOC_g,  FOC_r ,dv_dlogR  = self.pde_rhs(logK, Z, Y, logR, λ3, logξ)
+        rhs, pv, dv_dY, c, inside_log_i_g , inside_log_i_d ,  FOC_d, FOC_g,  FOC_r ,dv_dlogR , precond_w = self.pde_rhs(logK, Z, Y, logR, λ3, logξ)
 
         epsilon = 10e-8
         
@@ -346,11 +356,11 @@ class PostDamagePreTechModel:
                 loss_dv_dlogR =  dv_dlogR  * tf.reshape( tf.cast( dv_dlogR < 0.0, tf.float32 ),  [-1, 1]) + 10e-8
 
                     
-                loss = tf.sqrt(tf.reduce_mean(tf.square(  rhs - pv    )))  \
+                loss = tf.sqrt(tf.reduce_mean(tf.square( (rhs - pv) / precond_w )))  \
                        + tf.sqrt(tf.reduce_mean(tf.square(FOC_g ))) \
                         + tf.sqrt(tf.reduce_mean(tf.square(FOC_d  ))) \
                         + tf.sqrt(tf.reduce_mean(tf.square(FOC_r  ))) \
-                        + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY  )))  + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dlogR  ))) 
+                        + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dY  )))  + tf.sqrt(tf.reduce_mean(tf.square(loss_dv_dlogR  )))
                     
                 return loss
 
@@ -438,14 +448,19 @@ class PostDamagePreTechModel:
         # self.i_d_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_d_nn_checkpoint_PostDamagePostTech')
         # self.i_r_nn.load_weights( self.params["job_name"]  + '/PostDamageIntermTech/i_r_nn_checkpoint_PostDamageIntermTech')
  
-        # DGM checkpoints are architecture-specific; only resume from another DGM run.
+        NBER_folder = legacy_nber_folder(required=self.params.get("pretrained_path") is None)
+        if NBER_folder is not None:
+            self.v_nn.load_weights( NBER_folder + "/pre_tech_post_damage/v_nn_checkpoint_pre_tech_post_damage" )
+            self.i_g_nn.load_weights( NBER_folder  + "/pre_tech_post_damage/i_g_nn_checkpoint_pre_tech_post_damage")
+            self.i_d_nn.load_weights( NBER_folder + "/pre_tech_post_damage/i_d_nn_checkpoint_pre_tech_post_damage" )
+            self.i_r_nn.load_weights(NBER_folder+  "/pre_tech_post_damage/i_I_nn_checkpoint_pre_tech_post_damage" )
+
+        ## Load pretrained weights
         if self.params['pretrained_path'] is not None:
             self.v_nn.load_weights( self.params["pretrained_path"]  + '/PostDamagePreTech/v_nn_checkpoint_PostDamagePreTech')
             self.i_g_nn.load_weights( self.params["pretrained_path"]  + '/PostDamagePreTech/i_g_nn_checkpoint_PostDamagePreTech')
             self.i_d_nn.load_weights( self.params["pretrained_path"]  + '/PostDamagePreTech/i_d_nn_checkpoint_PostDamagePreTech')
             self.i_r_nn.load_weights( self.params["pretrained_path"]  + '/PostDamagePreTech/i_r_nn_checkpoint_PostDamagePreTech')
-        else:
-            distill_from_baseline(self, "PostDamagePreTech", n_inputs)
 
         # Preserve the loaded checkpoint if fine-tuning becomes nonfinite.
         best_v_nn.set_weights(self.v_nn.get_weights())
@@ -716,12 +731,10 @@ if __name__ == '__main__':
     params["v_PostDamagePreTech_nn_path"]  = export_folder +  "/PostDamagePreTech/v_nn_checkpoint_PostDamagePreTech"
     params["v_PostDamageIntermTech_nn_path"]  = export_folder +  "/PostDamageIntermTech/v_nn_checkpoint_PostDamageIntermTech"
     params["v_PreDamageIntermTech_nn_path"]  = export_folder +  "/PreDamageIntermTech/v_nn_checkpoint_PreDamageIntermTech"
-    ## i_g and i_d activations come after params because we amy want to use phi_g and phi_d
-    phi_g = 16.7
-    phi_d = 16.7
+    # The lower control bound is -1/theta, which keeps log(1 + theta*i) valid.
     if output_layer_activations[1] == "custom" or output_layer_activations[2] == "custom":
-        params["i_g_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0/ phi_g) / (tf.exp(2 * x) + 1.0)
-        params["i_d_nn_config"]["final_activation"] = lambda x: 1.0 - (1.0 + 1.0/ phi_d) / (tf.exp(2 * x) + 1.0)
+        params["i_g_nn_config"]["final_activation"] = investment_rate_activation(PARAMS["θ_g"])
+        params["i_d_nn_config"]["final_activation"] = investment_rate_activation(PARAMS["θ_d"])
 
     test_model = PostDamagePreTechModel(params)
     test_model.export_parameters()

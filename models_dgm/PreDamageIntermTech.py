@@ -246,7 +246,7 @@ class PreDamageIntermTechModel:
         # Damage function is from the 2024 SITE Paper.
         v_logN_term = (λ1 + λ2 * Y  ) * v_y_term + (λ2  ) * v_yy_term
 
-        v_logR_term = - ζ + ψ0 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )  + 0.5 * σ_κ**2    +   σ_κ * h_r
+        v_logR_term = - ζ + ψ0 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )  - 0.5 * σ_κ**2    +   σ_κ * h_r
         v_logRlogR_term = 0.5 * σ_κ**2 
          
         ######################
