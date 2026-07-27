@@ -410,7 +410,9 @@ class PreDamagePostTechModel:
         # self.i_g_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_g_nn_checkpoint_PostDamagePostTech')
         # self.i_d_nn.load_weights( self.params["job_name"]  + '/PostDamagePostTech/i_d_nn_checkpoint_PostDamagePostTech')
         
-        NBER_folder = legacy_nber_folder(required=self.params.get("pretrained_path") is None)
+        # ABLATION_SKIP_NBER=1 -> true random init (skip the NBER warm-start) for the
+        # closed-form-vs-from-scratch ablation; default behaviour unchanged.
+        NBER_folder = None if os.environ.get("ABLATION_SKIP_NBER", "0") == "1" else legacy_nber_folder(required=self.params.get("pretrained_path") is None)
         if NBER_folder is not None:
             self.v_nn.load_weights( NBER_folder + "/post_tech_pre_damage/v_nn_checkpoint_post_tech_pre_damage" )
             self.i_g_nn.load_weights( NBER_folder  + "/post_tech_pre_damage/i_g_nn_checkpoint_post_tech_pre_damage")

@@ -1,7 +1,7 @@
 """
 Solve  post-damage-post-technology  model.
 
-The value function we are solving is v = V - log N. v still depends on log N in the HJB.
+The value function we are solving is v = V + log N (so V = v - log N). v still depends on log N in the HJB.
 """
 
 import numpy as np
@@ -192,9 +192,9 @@ class PostDamagePostTechModel:
         h_d = - 1.0 /  ξ * ((dv_dlogK - Z * dv_dZ ) * (1-Z) * σ_d )
         h_g = - 1.0 /  ξ * ((dv_dlogK + (1-Z) * dv_dZ ) * Z * σ_g )
 
-        # We are solving for v = V - log N, so the damage term in the HJB is modified accordingly
+        # We are solving for v = V + log N (so V = v - log N), so the damage term in the HJB is modified accordingly
         # dV/dY = dv_dY - d(log N)/dY and d(log N)/dY = λ1 + λ2 * Y  
-        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
+        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y + λ3 * (Y - y_upper)   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
 
 
         ######################

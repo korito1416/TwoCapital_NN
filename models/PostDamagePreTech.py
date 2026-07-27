@@ -210,7 +210,7 @@ class PostDamagePreTechModel:
 
         # We are solving for v = V - log N, so the damage term in the HJB is modified accordingly
         # dV/dY = dv_dY - d(log N)/dY and d(log N)/dY = λ1 + λ2 * Y  
-        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
+        h_y = - 1.0 /  ξ * ( dv_dY  - (λ1  + λ2 * Y + λ3 * (Y - y_upper)   )   ) *    η *  A_d * (1-Z) * K     *  ϛ
 
         h_r = - 1.0 / ξ *  dv_dlogR   * σ_κ 
         
@@ -252,7 +252,7 @@ class PostDamagePreTechModel:
         # Damage function is from the 2024 SITE Paper.
         v_logN_term = (λ1 + λ2 * Y + λ3 * (Y - y_upper)) * v_y_term + (λ2 + λ3) * v_yy_term
 
-        v_logR_term = - ζ + ψ0 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )  + 0.5 * σ_κ**2    +   σ_κ * h_r
+        v_logR_term = - ζ + ψ0 * tf.exp( ψ1  *   ( tf.math.log(i_r) +logK -  logR) )  - 0.5 * σ_κ**2    +   σ_κ * h_r
         v_logRlogR_term = 0.5 * σ_κ**2 
          
         ######################
