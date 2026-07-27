@@ -1,0 +1,13 @@
+{
+ "box_err_i_d": NaN,
+ "box_err_i_g": NaN,
+ "di_err_i_d": NaN,
+ "di_mean_i_d": NaN,
+ "di_min_i_d": NaN,
+ "di_err_vZ": NaN,
+ "di_FD_mean_i_d": 0.024202236023678755,
+ "di_FD_min_i_d": -0.024820804096566958,
+ "di_FD_frac_neg": 0.16666666666666666,
+ "di_match_depth": NaN,
+ "di_frac_neg": 0.0
+}

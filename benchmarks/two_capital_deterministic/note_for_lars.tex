@@ -1,0 +1,97 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+
+\newcommand{\dd}{\mathrm{d}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\title{Deterministic Two-Capital Model: HJB and Parameters}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-3em}
+
+\section*{1.\quad State variable and setup}
+
+Two reproducible capital stocks: dirty $K^d_t$ and green $K^g_t$. The single
+\emph{endogenous} state is the green capital share (the ratio)
+\[
+Z_t \;=\; \frac{K^g_t}{K^d_t+K^g_t}\in(0,1),
+\qquad \log K_t=\log\!\big(K^d_t+K^g_t\big).
+\]
+Because the problem is homogeneous of degree one in total capital, the value
+function separates,
+\[
+V(\log K,Z)=\log K + v(Z),
+\]
+so the problem reduces to a one-dimensional object $v(Z)$. This is the
+deterministic (no random capital shocks) special case; the volatility version
+adds the usual $\tfrac12\sigma^2$ second-order terms and It\^o drift corrections.
+
+\section*{2.\quad Dynamics, consumption, and the HJB}
+
+Capital evolves with logarithmic adjustment costs,
+\[
+\frac{\dd K^j_t}{K^j_t}=\phi_j(i^j_t)\,\dd t,\qquad
+\phi_j(i)=\alpha_j+\Gamma_j\log(1+\theta_j i),\qquad j\in\{d,g\},
+\]
+with investment rates $i^j=I^j/K^j$ and the domain restriction $i^j>-1/\theta_j$.
+By It\^o,
+\[
+\frac{\dd \log K_t}{\dd t}=(1-Z)\phi_d(i^d)+Z\,\phi_g(i^g),\qquad
+\frac{\dd Z_t}{\dd t}=Z(1-Z)\big[\phi_g(i^g)-\phi_d(i^d)\big].
+\]
+Scaled consumption (output net of investment, divided by $K$) is
+\[
+c \;=\; \frac{C}{K}\;=\;(1-Z)(A_d-i^d)+Z(A_g-i^g).
+\]
+With log utility $\delta\log C$ and the conjecture $V=\log K+v(Z)$, the $\log K$
+terms cancel and the HJB becomes the first-order, one-dimensional equation
+\[
+0=\max_{i^d,i^g}\Big\{\delta\log c-\delta v(Z)
++(1-Z)\phi_d(i^d)+Z\,\phi_g(i^g)
++Z(1-Z)\big[\phi_g(i^g)-\phi_d(i^d)\big]\,v'(Z)\Big\}.
+\]
+At the two ends $Z\in\{0,1\}$ the $Z$-drift vanishes and $v$ equals the
+one-capital value $v_j=\log c_j+\tfrac{\alpha_j}{\delta}
++\tfrac{\Gamma_j}{\delta}\log\!\big(\tfrac{\Gamma_j\theta_j c_j}{\delta}\big)$,
+with $c_j=\tfrac{\delta(1+\theta_j A_j)}{\theta_j(\delta+\Gamma_j)}$.
+
+\paragraph{First-order conditions.}
+Writing the marginal values $q_d(Z)=1-Z\,v'(Z)$ and $q_g(Z)=1+(1-Z)\,v'(Z)$
+(so $(1-Z)q_d+Zq_g=1$),
+\[
+\frac{\delta}{c}=q_d\,\frac{\Gamma_d\theta_d}{1+\theta_d i^d},
+\qquad
+\frac{\delta}{c}=q_g\,\frac{\Gamma_g\theta_g}{1+\theta_g i^g}
+\qquad\Longrightarrow\qquad
+i^j=\frac{\Gamma_j\,c\,q_j(Z)}{\delta}-\frac{1}{\theta_j}.
+\]
+
+\section*{3.\quad Parameters (from \texttt{models/params.py})}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Parameter & Value & Note\\
+\midrule
+$\delta$ & $0.01$ & subjective discount rate\\
+$(\alpha_d,\Gamma_d,\theta_d,\sigma_d)$ & $(-0.035,\ 0.060,\ 16.7,\ 0.01)$ & dirty\\
+$(\alpha_g,\Gamma_g,\theta_g,\sigma_g)$ & $(-0.035,\ 0.060,\ 16.7,\ 0.01)$ & green\\
+$A_d$ & $0.1303$ & dirty productivity\\
+$A_g$ & $0.1567$ & $=A_g''$, post-tech (breakthrough)\\
+$Z$ range & $[0.01,\ 0.99]$ & \\
+$\log K$ range & $[4,\ 7]$ & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Note $\Gamma_j\theta_j=0.060\times16.7=1.002\approx1$ (the calibrated Tobin's-$q$
+normalization), and $\alpha_d=\alpha_g<0$.
+
+\end{document}

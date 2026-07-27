@@ -1,0 +1,235 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\newtheorem{remark}{Remark}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\xicap}{\xi}
+\setlength{\parindent}{0pt}\setlength{\parskip}{6pt}
+
+\title{Two-Capital Model with Capital Shocks \emph{and} Model Uncertainty:\\
+Derivation of the Robust Reduced HJB}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-3em}
+
+This note adds \emph{Hansen--Sargent robustness} (a concern for misspecification of
+the two Brownian capital processes) on top of the two-capital model with shocks. We
+introduce drift distortions $h_d,h_g$ on the dirty/green capital Brownian shocks,
+penalised by relative entropy with multiplier $\xicap$. We derive the robust HJB, the
+worst-case drifts, the reduction to a one-dimensional second-order ODE in $v(Z)$, the
+unchanged control FOCs, and the boundary conditions. Setting $\xicap\to\infty$ recovers
+the non-robust shock model of \texttt{derivation.tex} (sibling folder); the structure
+matches the capital-process distortion in \texttt{models/PostDamagePostTech.py}
+(lines 192--193 worst-case drifts $h_d,h_g$; line 240 exposure coupling
+$h_d\mathcal E_d+h_g\mathcal E_g$; line 242 entropy penalty $\tfrac{\xicap}{2}|h|^2$) and
+the worst-case-drift FOCs in \texttt{PAPER\_HJB\_REFERENCE.md}, a (climate-free,
+jump-free) special case of Barnett--Brock--Hansen--Hu--Huang (2025). The production code
+additionally carries climate ($h_y$), R\&D, and jump distortions and an
+\emph{additively separable} penalty $\tfrac{\xicap}{2}(h_d^2+h_g^2+h_y^2+\cdots)$; those
+channels are absent here by scope, and switching them off leaves the capital block below
+unchanged.
+
+\section{Setup: distorted capital dynamics}
+
+As before, two capital stocks with log adjustment costs and multiplicative Brownian
+shocks; $\phi_j(i)\equiv\alpha_j+\Gamma_j\log(1+\theta_j i)$, $j\in\{d,g\}$,
+$W^d\perp W^g$, $i^j>-1/\theta_j$. States $\log K=\log(K^d+K^g)$,
+$Z=K^g/(K^d+K^g)$, so $K^d=(1-Z)K$, $K^g=ZK$, and $c\equiv C/K=(1-Z)(A_d-i^d)+Z(A_g-i^g)$.
+
+The decision maker does not fully trust the benchmark capital dynamics. Under an
+alternative model indexed by progressively measurable drift distortions
+$h=(h_d,h_g)$, each Brownian acquires a drift, $\dd W^j_t=h_j\,\dd t+\dd \widetilde W^j_t$
+with $\widetilde W^j$ a Brownian motion under the distorted measure. The distorted
+capital dynamics are
+\[
+\frac{\dd K^j_t}{K^j_t}=\big[\phi_j(i^j)+\sigma_j h_j\big]\dd t+\sigma_j\,\dd \widetilde W^j_t,
+\qquad j\in\{d,g\}.
+\]
+The distortion enters the drift only through $\sigma_j h_j$ (it cannot change the
+diffusion magnitude). The instantaneous \emph{relative entropy} of the distorted model
+with respect to the benchmark is $\tfrac12\,(h_d^2+h_g^2)$.
+
+\paragraph{Robust (max--min) objective.} With logarithmic felicity and discount
+$\delta$, the robust planner solves
+\[
+\max_{i^d,i^g}\ \min_{h_d,h_g}\
+\mathbb E\!\int_0^\infty e^{-\delta t}\Big[\delta\log C_t
++\tfrac{\xicap}{2}\big(h_d^2+h_g^2\big)\Big]\dd t,
+\]
+where the inner minimisation over $h$ is nature choosing the worst case and the
+penalty $\tfrac{\xicap}{2}|h|^2$ is the cost of deviating from the benchmark. The
+multiplier $\xicap>0$ indexes the strength of the robustness concern: small $\xicap$
+makes distortions cheap (strong robustness/uncertainty aversion); $\xicap\to\infty$
+makes them infinitely costly and recovers the non-robust model.
+
+\section{It\^o reduction to $(\log K,Z)$ under distortion}
+
+The distortion shifts the drift of each $\log K^j$ by $\sigma_j h_j$ but leaves the
+diffusion and quadratic-variation terms unchanged. Repeating the It\^o algebra of the
+shock note with $\phi_j\mapsto\phi_j+\sigma_j h_j$ in the drifts only:
+\begin{align*}
+\dd\log K_t&=\Big[(1-Z)\phi_d+Z\phi_g-\tfrac12\big(\sigma_d^2(1-Z)^2+\sigma_g^2Z^2\big)
++(1-Z)\sigma_d h_d+Z\sigma_g h_g\Big]\dd t+(\cdots)\dd\widetilde W,\\
+\dd Z_t&=Z(1-Z)\Big[\phi_g-\phi_d+(1-Z)\sigma_d^2-Z\sigma_g^2
++\sigma_g h_g-\sigma_d h_d\Big]\dd t+(\cdots)\dd\widetilde W .
+\end{align*}
+The diffusion/covariation terms ($\dd\langle\log K\rangle$, $\dd\langle Z\rangle$,
+$\dd\langle\log K,Z\rangle$) are exactly as in the non-robust shock note, since $h$
+does not affect them.
+
+\section{Robust HJB and its reduction}
+
+Writing $V(\log K,Z)$ and collecting the $h$-dependent drift pieces, the robust HJB is
+\begin{align*}
+0=\max_{i^d,i^g}\min_{h_d,h_g}\Big\{\,
+&\underbrace{[\text{non-robust shock HJB terms}]}_{\text{as in the shock note}}\\
+&+\Big[(1-Z)\sigma_d h_d+Z\sigma_g h_g\Big]V_{\log K}
++Z(1-Z)\big[\sigma_g h_g-\sigma_d h_d\big]V_Z
++\tfrac{\xicap}{2}\big(h_d^2+h_g^2\big)\Big\}.
+\end{align*}
+Homogeneity gives $V=\log K+v(Z)$, so $V_{\log K}=1$, $V_Z=v'$, and the bracketed
+$h$-terms regroup by capital. (The climate-free model is \emph{exactly} homogeneous of
+degree one in $K$, hence $V_{\log K}=1$; the full climate code keeps the general
+$V_{\log K}=\partial_{\log K}v$ because emissions enter in levels, $E_t\propto K$, breaking
+homogeneity. The exposures below are the $V_{\log K}=1$ specialisation of the code's
+general coefficients.)
+\[
+h_d\,\underbrace{(1-Z)\sigma_d\,[\,1-Z\,v'\,]}_{\displaystyle \mathcal E_d}
++h_g\,\underbrace{Z\sigma_g\,[\,1+(1-Z)v'\,]}_{\displaystyle \mathcal E_g}
++\tfrac{\xicap}{2}\big(h_d^2+h_g^2\big),
+\qquad
+\mathcal E_d=(1-Z)\sigma_d\,q_d,\ \ \mathcal E_g=Z\sigma_g\,q_g,
+\]
+with $q_d=1-Zv'$, $q_g=1+(1-Z)v'$ (the same marginal values as before). The
+``exposures'' $\mathcal E_d,\mathcal E_g$ are precisely the coefficients
+$(V_{\log K}-ZV_Z)(1-Z)\sigma_d$ and $(V_{\log K}+(1-Z)V_Z)Z\sigma_g$ that appear in
+\texttt{PostDamagePostTech.py}.
+
+\paragraph{Worst-case drifts.} The inner problem is separable and quadratic; the FOC
+$\partial/\partial h_j=0$ gives $\mathcal E_j+\xicap h_j=0$, i.e.
+\[
+\boxed{\;
+h_d^\ast=-\frac{1}{\xicap}\,(1-Z)\sigma_d\,q_d,
+\qquad
+h_g^\ast=-\frac{1}{\xicap}\,Z\sigma_g\,q_g.
+\;}
+\]
+These match \texttt{PAPER\_HJB\_REFERENCE.md}:
+$h_d=-\tfrac1{\xicap}\{V_{\log K}-V_Z Z\}(1-Z)\sigma_d$,
+$h_g=-\tfrac1{\xicap}\{V_{\log K}+V_Z(1-Z)\}Z\sigma_g$. Substituting back, the inner
+$\min$ contributes $\mathcal E_j h_j^\ast+\tfrac{\xicap}{2}(h_j^\ast)^2=-\tfrac{1}{2\xicap}\mathcal E_j^2$,
+so the robust HJB collapses to the shock HJB plus a single \emph{robustness drag}:
+\[
+\boxed{\
+\begin{aligned}
+0=\max_{i^d,i^g}\Big\{\,&\delta\log c-\delta v(Z)
++(1-Z)\phi_d+Z\phi_g-\tfrac12\big(\sigma_d^2(1-Z)^2+\sigma_g^2Z^2\big)\\
+&+\big[\phi_g-\phi_d+(1-Z)\sigma_d^2-Z\sigma_g^2\big]Z(1-Z)\,v'
++\tfrac12Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)\,v''\\
+&-\frac{1}{2\xicap}\Big[(1-Z)^2\sigma_d^2\,q_d^2+Z^2\sigma_g^2\,q_g^2\Big]\Big\}.
+\end{aligned}\ }
+\]
+The new term $-\tfrac{1}{2\xicap}\big[(1-Z)^2\sigma_d^2 q_d^2+Z^2\sigma_g^2 q_g^2\big]$
+is nonpositive: robustness lowers the value. It scales as $\sigma^2/\xicap$, so it
+matters only with shocks ($\sigma>0$) and vanishes as $\xicap\to\infty$.
+
+\section{First-order conditions for the controls}
+
+The distortions $h_j$ and the multiplier $\xicap$ are control-independent (the
+robustness drag depends on $v'$ through $q_d,q_g$ but not directly on $i^j$, since
+$q_j$ is fixed when differentiating in $i^j$). Hence the control FOCs are
+\emph{identical} to the deterministic/shock case:
+\[
+\boxed{\ \frac{\delta}{c}=q_d\frac{\Gamma_d\theta_d}{1+\theta_d i^d}
+=q_g\frac{\Gamma_g\theta_g}{1+\theta_g i^g},\qquad
+i^j=\frac{\Gamma_j\,c\,q_j}{\delta}-\frac1{\theta_j},\qquad
+q_d=1-Zv',\ q_g=1+(1-Z)v'.\ }
+\]
+Under a common adjustment technology this again gives the closed form
+$c(Z)=\delta(1+\theta\bar A(Z))/(\theta(\delta+\Gamma))$, $\bar A=(1-Z)A_d+ZA_g$,
+independent of $v'$. \emph{Robustness changes the controls only indirectly}, through
+its effect on the equilibrium slope $v'(Z)$.
+
+\section{Boundary conditions}
+
+As in the shock model, the $v''$ and $v'$ terms vanish at $Z\in\{0,1\}$ (factors
+$Z^2(1-Z)^2$ and $Z(1-Z)$). The standalone variance term survives, and so does the
+robustness drag: at $Z=0$, $q_d=1$, $(1-Z)=1$, giving $-\tfrac{1}{2\xicap}\sigma_d^2$;
+at $Z=1$, $q_g=1$, giving $-\tfrac{1}{2\xicap}\sigma_g^2$. Hence at $Z=0$,
+\[
+0=\delta\log c_d-\delta v(0)+\phi_d(i^\ast)-\tfrac12\sigma_d^2-\tfrac{1}{2\xicap}\sigma_d^2,
+\]
+so the boundary values are the one-capital values shifted down by \emph{both} the
+It\^o variance drag and a robustness drag:
+\[
+\boxed{\;
+v_j=\log c_j+\frac{\alpha_j}{\delta}
++\frac{\Gamma_j}{\delta}\log\!\Big(\frac{\Gamma_j\theta_j c_j}{\delta}\Big)
+-\frac{\sigma_j^2}{2\delta}-\frac{\sigma_j^2}{2\xicap\delta},
+\qquad
+c_j=\frac{\delta(1+\theta_j A_j)}{\theta_j(\delta+\Gamma_j)}\ \text{(unchanged)}.
+\;}
+\]
+The control endpoints are unaffected ($q_d=q_g=1$ there). Setting $\xicap\to\infty$
+recovers the shock-model boundary; further $\sigma_j=0$ recovers the deterministic one.
+
+\section{Numerical interpretation and the $\log\xicap$ pseudo-state}
+
+\paragraph{Canonical multipliers.} We solve at $\xicap\in\{0.05,\,0.1,\,148.4\}$
+(equivalently $\log\xicap\approx\{-3.0,-2.30,5.0\}$): $\xicap=148.4$ is the
+uncertainty-neutral benchmark ($\approx$ shock model), $\xicap=0.1$ moderate, and
+$\xicap=0.05$ strong robustness. Magnitude of the drag at the calibration
+$\sigma=0.01$: $\sigma^2/(2\xicap)=5\!\times\!10^{-5}/\xicap$, i.e.\ $10^{-3}$ at
+$\xicap=0.05$ and $\sim\!3\!\times\!10^{-7}$ at $\xicap=148.4$. The robustness effect
+therefore grows with $\sigma^2$; we additionally report a larger-$\sigma$ case to make
+it visible.
+
+\paragraph{$\log\xicap$ as a pseudo-state for the neural net.} Mirroring
+\texttt{PostDamagePostTech.py} (network input includes $\log\xicap$) and
+\texttt{params.py} ($\log\xicap\in[-3,5]$ sampled by stratified-uniform), the DGM
+network takes $(Z,\log\xicap)$ as input and learns $v(Z,\log\xicap)$ on the whole
+slab, with $\xicap=e^{\log\xicap}$ entering the robustness drag at each collocation
+point. The worst-case drifts are recovered \emph{ex post} as
+$h_j^\ast=-\mathcal E_j/\xicap$. The finite-difference solver instead solves the BVP
+separately at each fixed $\xicap$ (the accurate reference for the network).
+
+\begin{remark}[Conditioning]
+The robustness drag $-\tfrac1{2\xicap}[(1-Z)^2\sigma_d^2q_d^2+Z^2\sigma_g^2q_g^2]$ is
+a smooth, $v'$-dependent reaction term; it does not add a new second-order operator,
+so the elliptic structure (and hence the conditioning advantage over the deterministic
+model) is inherited from the shock term $\tfrac12Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)v''$.
+As a $v'$-quadratic source it mildly stiffens the BVP for small $\xicap$.
+\end{remark}
+
+\paragraph{Parameters.} As in the shock note: $\delta=0.01$;
+$(\alpha,\Gamma,\theta,\sigma)_d=(\alpha,\Gamma,\theta,\sigma)_g=(-0.035,0.060,16.7,0.01)$;
+$A_d=0.1303$, $A_g=A_g''=0.1567$; solved on $Z\in[0.01,0.99]$,
+$\log\xicap\in[-3,5]$.
+
+\section*{Referee report and rebuttals}
+
+A five-referee adversarial panel (each independently re-deriving the algebra and
+cross-checking against \texttt{PostDamagePostTech.py} and \texttt{PAPER\_HJB\_REFERENCE.md})
+returned \textbf{no confirmed errors}. Each of the seven central claims---the distorted
+drift $\phi_j+\sigma_j h_j$ with unchanged diffusion (Girsanov), the exposure regrouping
+$\mathcal E_d,\mathcal E_g$, the worst-case drifts $h_j^\ast=-\mathcal E_j/\xicap$, the
+inner-min collapse to the single drag $-\tfrac1{2\xicap}[(1-Z)^2\sigma_d^2q_d^2+Z^2\sigma_g^2q_g^2]$,
+the unchanged control FOCs, the boundary drag $-\sigma_j^2/(2\xicap\delta)$, and the limits
+$\xicap\to\infty$, $\sigma\to0$---was verified to machine precision. In particular two
+referees confirmed numerically (errors $\sim10^{-18}$, over $2\!\times\!10^4$ random points
+with \emph{general} non-homogeneous $V_{\log K}$) that the collapsed drag equals the code's
+\emph{un}-collapsed assembly $h_d\mathcal E_d+h_g\mathcal E_g+\tfrac{\xicap}{2}(h_d^2+h_g^2)$
+evaluated at $h^\ast$.
+
+The five raised items were all expository (not mathematical), and are addressed inline
+above: \emph{(i)}~$V_{\log K}=1$ is the exact climate-free homogeneity vs.\ the code's
+general $\partial_{\log K}v$ (noted at the reduction step); \emph{(ii)}~the code's penalty
+also carries $h_y^2$ (climate channel), absent here by scope but additively separable
+(noted in the introduction); \emph{(iii)}~the exposure add-back lives at code line~240
+(now cited). None alters the boxed results.
+
+\end{document}

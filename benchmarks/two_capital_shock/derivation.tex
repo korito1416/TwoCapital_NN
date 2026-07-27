@@ -1,0 +1,164 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\newtheorem{remark}{Remark}
+\newcommand{\dd}{\mathrm{d}}
+\setlength{\parindent}{0pt}\setlength{\parskip}{6pt}
+
+\title{Two-Capital Model \emph{with} Capital Shocks:\\ Derivation of the Reduced HJB}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-3em}
+
+This note adds Brownian capital shocks to the deterministic two-capital
+adjustment-cost model. The new state equation, the It\^o reduction to
+$(\log K,Z)$, the HJB, its reduction to a one-dimensional \emph{second-order} ODE
+in $v(Z)$, the FOCs, and the boundary conditions are derived explicitly. It is the
+$\sigma_d,\sigma_g>0$ generalization of the deterministic case and a (climate-free,
+jump-free) special case of Barnett--Brock--Hansen--Hu--Huang (2025); the dynamics
+match that paper's eqs.\ (capital SDE), (d$\log K$), (d$Z$), and the HJB diffusion
+block.
+
+\section{Setup}
+
+Two reproducible capital stocks $K^d,K^g$ with AK output $Y=A_dK^d+A_gK^g$ and
+log adjustment costs. Each evolves with a multiplicative Brownian shock:
+\[
+\dd K^j_t = K^j_t\big[\alpha_j+\Gamma_j\log(1+\theta_j i^j_t)\big]\dd t
++\sigma_j K^j_t\,\dd W^j_t,\qquad
+\phi_j(i)\equiv\alpha_j+\Gamma_j\log(1+\theta_j i),\quad j\in\{d,g\},
+\]
+with $W^d\perp W^g$, investment rates $i^j=I^j/K^j$, and domain $i^j>-1/\theta_j$.
+States: $\log K=\log(K^d+K^g)$ and the green share $Z=K^g/(K^d+K^g)$, so
+$K^d=(1-Z)K$, $K^g=ZK$. Preferences: $\int_0^\infty e^{-\delta t}\delta\log C_t\,\dd t$
+with $C=(A_d-i^d)K^d+(A_g-i^g)K^g$, i.e.\ $c\equiv C/K=(1-Z)(A_d-i^d)+Z(A_g-i^g)$.
+
+\section{It\^o reduction to $(\log K,Z)$}
+
+\paragraph{Total capital.} With $K=K^d+K^g$,
+\[
+\frac{\dd K_t}{K_t}=(1-Z)\phi_d\,\dd t+Z\phi_g\,\dd t+(1-Z)\sigma_d\,\dd W^d+Z\sigma_g\,\dd W^g,
+\]
+whose quadratic variation is $\big[(1-Z)^2\sigma_d^2+Z^2\sigma_g^2\big]\dd t$ (using
+$W^d\perp W^g$). By It\^o, $\dd\log K=\dd K/K-\tfrac12(\dd K/K)^2$:
+\[
+\boxed{\ \dd\log K_t=\Big[(1-Z)\phi_d+Z\phi_g-\tfrac12\big(\sigma_d^2(1-Z)^2+\sigma_g^2Z^2\big)\Big]\dd t
++(1-Z)\sigma_d\,\dd W^d+Z\sigma_g\,\dd W^g.\ }
+\]
+
+\paragraph{Green share.} For $Z=g(K^d,K^g)=K^g/(K^d+K^g)$,
+\[
+g_{K^d}=-\tfrac{Z}{K},\quad g_{K^g}=\tfrac{1-Z}{K},\quad
+g_{K^dK^d}=\tfrac{2Z}{K^2},\quad g_{K^gK^g}=-\tfrac{2(1-Z)}{K^2},\quad g_{K^dK^g}=\tfrac{2Z-1}{K^2}.
+\]
+With $(\dd K^d)^2=K^2(1-Z)^2\sigma_d^2\dd t$, $(\dd K^g)^2=K^2Z^2\sigma_g^2\dd t$, and
+$\dd K^d\dd K^g=0$, the It\^o drift is
+\[
+g_{K^d}K^d\phi_d+g_{K^g}K^g\phi_g+\tfrac12\big[g_{K^dK^d}(\dd K^d)^2+g_{K^gK^g}(\dd K^g)^2\big]/\dd t
+=Z(1-Z)\big[(\phi_g-\phi_d)+(1-Z)\sigma_d^2-Z\sigma_g^2\big],
+\]
+and the diffusion is $g_{K^d}K^d\sigma_d\dd W^d+g_{K^g}K^g\sigma_g\dd W^g
+=-Z(1-Z)\sigma_d\dd W^d+Z(1-Z)\sigma_g\dd W^g$. Hence
+\[
+\boxed{\ \dd Z_t=Z(1-Z)\Big[\phi_g-\phi_d+(1-Z)\sigma_d^2-Z\sigma_g^2\Big]\dd t
++Z(1-Z)\sigma_g\,\dd W^g-Z(1-Z)\sigma_d\,\dd W^d.\ }
+\]
+
+\paragraph{Covariance.} $\dd\langle\log K,Z\rangle_t
+=\big[-Z(1-Z)^2\sigma_d^2+Z^2(1-Z)\sigma_g^2\big]\dd t$, and
+$\dd\langle Z\rangle_t=Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)\dd t$.
+
+\section{HJB and its reduction}
+
+The HJB in $(\log K,Z)$ is
+\begin{align*}
+0=\max_{i^d,i^g}\Big\{\,&\delta\log c+\delta\log K-\delta V
++\Big[(1-Z)\phi_d+Z\phi_g-\tfrac{\sigma_d^2(1-Z)^2+\sigma_g^2Z^2}{2}\Big]V_{\log K}
++\tfrac{\sigma_d^2(1-Z)^2+\sigma_g^2Z^2}{2}V_{\log K\log K}\\
+&+\big[\phi_g-\phi_d+(1-Z)\sigma_d^2-Z\sigma_g^2\big]Z(1-Z)\,V_Z
++\tfrac12Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)\,V_{ZZ}\\
+&+\big[-Z(1-Z)^2\sigma_d^2+Z^2(1-Z)\sigma_g^2\big]V_{\log K,Z}\Big\}.
+\end{align*}
+Homogeneity of degree one in $K$ gives the conjecture $V(\log K,Z)=\log K+v(Z)$, so
+$V_{\log K}=1$, $V_{\log K\log K}=0$, $V_{\log K,Z}=0$, $V_Z=v'(Z)$, $V_{ZZ}=v''(Z)$.
+The $\delta\log K$ and $V_{\log K}$-constant pieces cancel ($\delta\log K-\delta V$
+leaves $-\delta v$), and the cross and $V_{\log K\log K}$ terms drop. The reduced
+\emph{second-order} ODE is
+\[
+\boxed{\
+0=\max_{i^d,i^g}\Big\{\delta\log c-\delta v(Z)
++(1-Z)\phi_d(i^d)+Z\phi_g(i^g)-\tfrac12\big(\sigma_d^2(1-Z)^2+\sigma_g^2Z^2\big)
+}
+\]
+\[
+\boxed{\
+\quad+\big[\phi_g(i^g)-\phi_d(i^d)+(1-Z)\sigma_d^2-Z\sigma_g^2\big]Z(1-Z)\,v'(Z)
++\tfrac12Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)\,v''(Z)\Big\}.\ }
+\]
+Setting $\sigma_d=\sigma_g=0$ recovers the first-order deterministic HJB exactly.
+
+\section{First-order conditions}
+
+The shock coefficients $\sigma_j$ are control-independent, so they do not enter the
+FOCs. Differentiating the bracket in $i^d$ (note $\partial c/\partial i^d=-(1-Z)$,
+and $\phi_d$ appears with coefficient $(1-Z)V_{\log K}=(1-Z)$ and with
+$-Z(1-Z)V_Z$):
+\[
+-\frac{\delta(1-Z)}{c}+(1-Z)\phi_d'(i^d)-Z(1-Z)\phi_d'(i^d)v'=0
+\ \Longrightarrow\ \frac{\delta}{c}=\phi_d'(i^d)\,\underbrace{(1-Z\,v')}_{q_d},
+\]
+and symmetrically $\tfrac{\delta}{c}=\phi_g'(i^g)\,q_g$ with $q_g=1+(1-Z)v'$,
+$\phi_j'(i)=\Gamma_j\theta_j/(1+\theta_j i)$. Thus the FOCs are \emph{identical} to
+the deterministic case:
+\[
+\boxed{\ \frac{\delta}{c}=q_d\frac{\Gamma_d\theta_d}{1+\theta_d i^d}
+=q_g\frac{\Gamma_g\theta_g}{1+\theta_g i^g},\qquad
+i^j=\frac{\Gamma_j\,c\,q_j}{\delta}-\frac1{\theta_j},\qquad
+q_d=1-Zv',\ q_g=1+(1-Z)v'.\ }
+\]
+Under a common adjustment technology ($\Gamma_d=\Gamma_g=\Gamma$,
+$\theta_d=\theta_g=\theta$), the Euler identity $(1-Z)q_d+Zq_g=1$ gives the same
+closed-form $c(Z)=\delta\big(1+\theta\bar A(Z)\big)/\big(\theta(\delta+\Gamma)\big)$,
+$\bar A(Z)=(1-Z)A_d+ZA_g$ (independent of $v'$).
+
+\section{Boundary conditions}
+
+The diffusion coefficient $\tfrac12Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)$ vanishes at
+$Z\in\{0,1\}$ (a doubly-degenerate diffusion; $Z$ cannot leave $(0,1)$), and so do
+the $v'$ drift (factor $Z(1-Z)$) and $v''$ terms. \emph{However}, the standalone
+variance term $-\tfrac12\big(\sigma_d^2(1-Z)^2+\sigma_g^2Z^2\big)$ carries \emph{no}
+$Z(1-Z)$ prefactor and therefore survives at the ends, leaving $-\tfrac12\sigma_d^2$
+at $Z=0$ and $-\tfrac12\sigma_g^2$ at $Z=1$. Hence at $Z=0$ the HJB collapses to
+$0=\delta\log c_d-\delta v(0)+\phi_d(i^\ast)-\tfrac12\sigma_d^2$, i.e.\ the boundary
+values are the deterministic one-capital values shifted \emph{down} by the It\^o
+variance drag $\sigma_j^2/(2\delta)$:
+\[
+v_j=\log c_j+\tfrac{\alpha_j}{\delta}
++\tfrac{\Gamma_j}{\delta}\log\!\Big(\tfrac{\Gamma_j\theta_j c_j}{\delta}\Big)
+-\frac{\sigma_j^2}{2\delta},
+\qquad
+c_j=\frac{\delta(1+\theta_j A_j)}{\theta_j(\delta+\Gamma_j)}\ \text{(unchanged)},
+\]
+used as Dirichlet data $v(0)=v_d$, $v(1)=v_g$. Setting $\sigma_j=0$ recovers the
+deterministic value; under the calibration ($\sigma_j=\delta=0.01$) the shift is
+$-0.005$ at each end ($c_j$ and the endpoint controls are unaffected since
+$q_d=q_g=1$ there).
+
+\begin{remark}[Why this is better conditioned than the deterministic case]
+The deterministic HJB is first order in $v$; $v'$ enters only through the small
+drift $Z(1-Z)(\phi_g-\phi_d)$, so it is weakly identified. The shock model adds the
+\emph{elliptic} term $\tfrac12Z^2(1-Z)^2(\sigma_d^2+\sigma_g^2)v''$, which couples
+neighboring states and pins the slope far more strongly. The trade-off is a genuine
+second-order BVP requiring the two Dirichlet conditions above.
+\end{remark}
+
+\paragraph{Parameters.} As in the deterministic note (\texttt{models/params.py}):
+$\delta=0.01$; $(\alpha,\Gamma,\theta,\sigma)_d=(\alpha,\Gamma,\theta,\sigma)_g
+=(-0.035,0.060,16.7,0.01)$; $A_d=0.1303$, $A_g=A_g''=0.1567$. (The shock model is
+solved on the same $Z\in[0.01,0.99]$.)
+
+\end{document}

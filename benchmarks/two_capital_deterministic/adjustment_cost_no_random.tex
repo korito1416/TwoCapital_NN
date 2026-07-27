@@ -1,0 +1,842 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\newtheorem{assumption}{Assumption}
+
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Abar}{\bar A}
+\newcommand{\alphabar}{\bar\alpha}
+\newcommand{\ibar}{\bar\imath}
+\newcommand{\DelA}{\Delta A}
+\newcommand{\Delalpha}{\Delta\alpha}
+
+\title{Two-Capital Economy with Adjustment Costs and No Random Capital Shocks}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Production}
+
+There are two reproducible capital stocks, dirty capital $K^d_t$ and green capital $K^g_t$.
+The two stocks produce a single final good according to linear technologies,
+\begin{equation}
+    Y_t = A_d K^d_t + A_g K^g_t .
+\end{equation}
+Investment in capital $j\in\{d,g\}$ is denoted by $I^j_t$, and the investment rate is
+\begin{equation}
+    i^j_t \equiv \frac{I^j_t}{K^j_t}.
+\end{equation}
+Consumption is output net of investment:
+\begin{equation}
+    C_t = (A_d-i^d_t)K^d_t + (A_g-i^g_t)K^g_t .
+\end{equation}
+The planner maximizes discounted log utility,
+\begin{equation}
+    \max_{\{i^d_t,i^g_t\}_{t\geq 0}}
+    \int_0^\infty e^{-\delta t}\delta \log C_t\,\dd t .
+\end{equation}
+The factor $\delta$ multiplying flow utility is a normalization. It does not change the optimal controls.
+
+\section{Deterministic Adjustment-Cost Capital Dynamics}
+
+In this note, there are adjustment costs but no random terms in capital accumulation. Capital evolves according to
+\begin{equation}
+    \frac{\dd K^j_t}{K^j_t}
+    = \phi_j(i^j_t)\,\dd t,
+    \qquad j\in\{d,g\},
+\end{equation}
+where
+\begin{equation}
+    \phi_j(i)
+    \equiv
+    \alpha_j+\Gamma_j\log(1+\theta_j i).
+\end{equation}
+The natural domain restriction is
+\begin{equation}
+    i^j_t> -\frac{1}{\theta_j},
+\end{equation}
+because $\log(1+\theta_j i^j_t)$ must be well-defined.
+
+The parameters $\alpha_j$, $\Gamma_j$, and $\theta_j$ have the following interpretations. The parameter $\alpha_j$ is the baseline drift of capital $j$, $\Gamma_j$ controls the productivity of investment in generating installed capital, and $\theta_j$ controls the curvature of the adjustment technology.
+
+\section{State Reduction}
+
+Define total capital and the green-capital share by
+\begin{equation}
+    K_t \equiv K^d_t+K^g_t,
+    \qquad
+    Z_t \equiv \frac{K^g_t}{K^d_t+K^g_t}.
+\end{equation}
+Then
+\begin{equation}
+    K^d_t=(1-Z_t)K_t,
+    \qquad
+    K^g_t=Z_tK_t.
+\end{equation}
+Define scaled consumption as
+\begin{equation}
+    c_t \equiv \frac{C_t}{K_t}.
+\end{equation}
+Using the resource constraint,
+\begin{equation}
+    c_t
+    =
+    (1-Z_t)(A_d-i^d_t)+Z_t(A_g-i^g_t).
+\end{equation}
+It is useful to define average productivity and average investment by
+\begin{equation}
+    \Abar(Z)\equiv (1-Z)A_d+ZA_g,
+    \qquad
+    \ibar\equiv (1-Z)i^d+Zi^g.
+\end{equation}
+Then the resource constraint can be written compactly as
+\begin{equation}
+    c=\Abar(Z)-\ibar.
+\end{equation}
+
+\section{Derivation of the $\log K$ and $Z$ Processes}
+
+Since
+\begin{equation}
+    \dd K_t=\dd K^d_t+\dd K^g_t,
+\end{equation}
+we have
+\begin{align}
+    \frac{\dd K_t}{K_t}
+    &=
+    \frac{K^d_t}{K_t}\frac{\dd K^d_t}{K^d_t}
+    +
+    \frac{K^g_t}{K_t}\frac{\dd K^g_t}{K^g_t} \\
+    &=
+    (1-Z_t)\phi_d(i^d_t)\,\dd t
+    +
+    Z_t\phi_g(i^g_t)\,\dd t.
+\end{align}
+Because the dynamics are deterministic, $\dd\log K_t=\dd K_t/K_t$. Hence
+\begin{equation}
+    \boxed{
+    \frac{\dd \log K_t}{\dd t}
+    =
+    (1-Z_t)\phi_d(i^d_t)+Z_t\phi_g(i^g_t).
+    }
+\end{equation}
+
+Next, using
+\begin{equation}
+    Z_t=\frac{K^g_t}{K_t},
+\end{equation}
+we obtain
+\begin{align}
+    \frac{\dd Z_t}{\dd t}
+    &=
+    \frac{\dot K^g_t K_t-K^g_t\dot K_t}{K_t^2} \\
+    &=
+    Z_t\phi_g(i^g_t)
+    -
+    Z_t\left[(1-Z_t)\phi_d(i^d_t)+Z_t\phi_g(i^g_t)\right] \\
+    &=
+    Z_t(1-Z_t)\left[\phi_g(i^g_t)-\phi_d(i^d_t)\right].
+\end{align}
+Therefore
+\begin{equation}
+    \boxed{
+    \frac{\dd Z_t}{\dd t}
+    =
+    Z_t(1-Z_t)\left[\phi_g(i^g_t)-\phi_d(i^d_t)\right].
+    }
+\end{equation}
+The green share rises when green capital grows faster than dirty capital:
+\begin{equation}
+    \phi_g(i^g_t)>\phi_d(i^d_t)
+    \quad\Longrightarrow\quad
+    \dot Z_t>0.
+\end{equation}
+
+\section{HJB Equation}
+
+Let the value function be written in the reduced state variables as
+\begin{equation}
+    V(\log K,Z).
+\end{equation}
+The HJB equation is
+\begin{align}
+    0
+    =
+    \max_{i^d,i^g}
+    \Bigg\{
+    &\delta\log C
+    -\delta V(\log K,Z)
+    +V_{\log K}(\log K,Z)
+    \left[(1-Z)\phi_d(i^d)+Z\phi_g(i^g)\right]
+    \nonumber\\
+    &+V_Z(\log K,Z)
+    Z(1-Z)\left[\phi_g(i^g)-\phi_d(i^d)\right]
+    \Bigg\}.
+\end{align}
+Since
+\begin{equation}
+    C=Kc,
+    \qquad
+    \log C=\log K+\log c,
+\end{equation}
+and the model is homogeneous of degree one in total capital, conjecture
+\begin{equation}
+    V(\log K,Z)=\log K+v(Z).
+\end{equation}
+Then
+\begin{equation}
+    V_{\log K}=1,
+    \qquad
+    V_Z=v'(Z).
+\end{equation}
+Substituting into the HJB and canceling the $\log K$ terms gives the one-dimensional deterministic HJB:
+\begin{equation}
+    \boxed{
+    \begin{aligned}
+    0
+    =
+    \max_{i^d,i^g}
+    \Big\{
+    &\delta\log c
+    -\delta v(Z)
+    +(1-Z)\phi_d(i^d)+Z\phi_g(i^g)
+    \\
+    &+Z(1-Z)\left[\phi_g(i^g)-\phi_d(i^d)\right]v'(Z)
+    \Big\}.
+    \end{aligned}
+    }
+\end{equation}
+
+\section{Marginal Values and an Equivalent HJB}
+
+Define the marginal-value elasticities
+\begin{equation}
+    q_d(Z)
+    \equiv
+    K\frac{\partial V}{\partial K^d},
+    \qquad
+    q_g(Z)
+    \equiv
+    K\frac{\partial V}{\partial K^g}.
+\end{equation}
+Using
+\begin{equation}
+    \frac{\partial Z}{\partial K^d}=-\frac{Z}{K},
+    \qquad
+    \frac{\partial Z}{\partial K^g}=\frac{1-Z}{K},
+\end{equation}
+we obtain
+\begin{equation}
+    \boxed{
+    q_d(Z)=1-Zv'(Z),
+    \qquad
+    q_g(Z)=1+(1-Z)v'(Z).
+    }
+\end{equation}
+These objects satisfy the Euler identity
+\begin{equation}
+    \boxed{
+    (1-Z)q_d(Z)+Zq_g(Z)=1.
+    }
+\end{equation}
+Using $q_d$ and $q_g$, the HJB can be written as
+\begin{equation}
+    \boxed{
+    0
+    =
+    \max_{i^d,i^g}
+    \left\{
+    \delta\log c
+    -\delta v(Z)
+    +(1-Z)q_d(Z)\phi_d(i^d)
+    +Zq_g(Z)\phi_g(i^g)
+    \right\}.
+    }
+\end{equation}
+This form is often the cleanest for deriving first-order conditions.
+
+\section{First-Order Conditions}
+
+The control variables are the investment rates $i^d$ and $i^g$. The first-order condition is not taken with respect to $K^d$ or $K^g$; rather, the marginal values $q_d$ and $q_g$ enter because investment changes the growth rate of the corresponding capital stock.
+
+From scaled consumption,
+\begin{equation}
+    c=(1-Z)(A_d-i^d)+Z(A_g-i^g),
+\end{equation}
+we have
+\begin{equation}
+    \frac{\partial c}{\partial i^d}=-(1-Z),
+    \qquad
+    \frac{\partial c}{\partial i^g}=-Z.
+\end{equation}
+Also,
+\begin{equation}
+    \phi'_j(i^j)=\frac{\Gamma_j\theta_j}{1+\theta_j i^j}.
+\end{equation}
+The first-order conditions are
+\begin{equation}
+    -\frac{\delta(1-Z)}{c}
+    +(1-Z)q_d(Z)\phi'_d(i^d)=0,
+\end{equation}
+\begin{equation}
+    -\frac{\delta Z}{c}
+    +Zq_g(Z)\phi'_g(i^g)=0.
+\end{equation}
+After canceling the common factors $(1-Z)$ and $Z$, the FOCs become
+\begin{equation}
+    \boxed{
+    \frac{\delta}{c}
+    =
+    q_d(Z)\frac{\Gamma_d\theta_d}{1+\theta_d i^d},
+    \qquad
+    \frac{\delta}{c}
+    =
+    q_g(Z)\frac{\Gamma_g\theta_g}{1+\theta_g i^g}.
+    }
+\end{equation}
+Equivalently,
+\begin{equation}
+    \boxed{
+    i^d
+    =
+    \frac{\Gamma_d c q_d(Z)}{\delta}-\frac{1}{\theta_d},
+    \qquad
+    i^g
+    =
+    \frac{\Gamma_g c q_g(Z)}{\delta}-\frac{1}{\theta_g}.
+    }
+\end{equation}
+The admissibility conditions require
+\begin{equation}
+    q_d(Z)>0,
+    \qquad
+    q_g(Z)>0,
+\end{equation}
+or equivalently
+\begin{equation}
+    -\frac{1}{1-Z}<v'(Z)<\frac{1}{Z}.
+\end{equation}
+
+\section{General Adjustment Technologies}
+
+For general $\Gamma_d$, $\Gamma_g$, $\theta_d$, and $\theta_g$, substituting the FOC-implied controls into the resource constraint gives
+\begin{equation}
+    \boxed{
+    c(Z)
+    =
+    \frac{
+    \delta\left[\Abar(Z)+\dfrac{1-Z}{\theta_d}+\dfrac{Z}{\theta_g}\right]
+    }{
+    \delta+(1-Z)\Gamma_d q_d(Z)+Z\Gamma_g q_g(Z)
+    }.
+    }
+\end{equation}
+Therefore, in the fully general case, scaled consumption still depends on the unknown value-function slope $v'(Z)$ through $q_d$ and $q_g$.
+
+\section{Common Adjustment Technology}
+
+Now impose the common adjustment technology used in the calibration:
+\begin{equation}
+    \Gamma_d=\Gamma_g=\Gamma,
+    \qquad
+    \theta_d=\theta_g=\theta.
+\end{equation}
+Then the Euler identity implies an exact analytical aggregation result.
+
+The FOCs imply
+\begin{equation}
+    1+\theta i^d
+    =
+    \frac{\Gamma\theta c}{\delta}q_d(Z),
+    \qquad
+    1+\theta i^g
+    =
+    \frac{\Gamma\theta c}{\delta}q_g(Z).
+\end{equation}
+Taking the capital-weighted average gives
+\begin{align}
+    1+\theta\ibar
+    &=
+    (1-Z)(1+\theta i^d)+Z(1+\theta i^g) \\
+    &=
+    \frac{\Gamma\theta c}{\delta}
+    \left[(1-Z)q_d+Zq_g\right] \\
+    &=
+    \frac{\Gamma\theta c}{\delta}.
+\end{align}
+Combining this equation with $c=\Abar(Z)-\ibar$ gives
+\begin{equation}
+    \boxed{
+    c(Z)
+    =
+    \frac{\delta\left[1+\theta\Abar(Z)\right]}{\theta(\delta+\Gamma)}.
+    }
+\end{equation}
+The aggregate investment rate is
+\begin{equation}
+    \boxed{
+    \ibar(Z)
+    =
+    \frac{\Gamma\theta\Abar(Z)-\delta}{\theta(\delta+\Gamma)}.
+    }
+\end{equation}
+Thus aggregate consumption and aggregate investment are available in closed form.
+
+The individual investment rates satisfy
+\begin{equation}
+    \boxed{
+    1+\theta i^d
+    =
+    \frac{\Gamma\left[1+\theta\Abar(Z)\right]}{\delta+\Gamma}q_d(Z),
+    }
+\end{equation}
+\begin{equation}
+    \boxed{
+    1+\theta i^g
+    =
+    \frac{\Gamma\left[1+\theta\Abar(Z)\right]}{\delta+\Gamma}q_g(Z).
+    }
+\end{equation}
+Therefore
+\begin{equation}
+    \boxed{
+    \frac{1+\theta i^g}{1+\theta i^d}
+    =
+    \frac{q_g(Z)}{q_d(Z)}
+    =
+    \frac{1+(1-Z)v'(Z)}{1-Zv'(Z)}.
+    }
+\end{equation}
+The investment-rate wedge is
+\begin{equation}
+    \boxed{
+    i^g-i^d
+    =
+    \frac{\Gamma c(Z)}{\delta}v'(Z).
+    }
+\end{equation}
+Equivalently,
+\begin{equation}
+    \boxed{
+    i^d=\ibar-Z(i^g-i^d),
+    \qquad
+    i^g=\ibar+(1-Z)(i^g-i^d).
+    }
+\end{equation}
+
+\section{Value-Function Equation Under Common Adjustment Costs}
+
+All controls are closed form once $v'(Z)$ is known. The remaining problem is to determine $v(Z)$.
+
+Using the FOC,
+\begin{equation}
+    1+\theta i^j
+    =
+    \frac{\Gamma\theta c(Z)}{\delta}q_j(Z),
+\end{equation}
+so
+\begin{equation}
+    \phi_j(i^j)
+    =
+    \alpha_j
+    +
+    \Gamma\log\left(
+    \frac{\Gamma\theta c(Z)}{\delta}q_j(Z)
+    \right).
+\end{equation}
+Define
+\begin{equation}
+    \alphabar(Z)\equiv (1-Z)\alpha_d+Z\alpha_g,
+    \qquad
+    \Delalpha\equiv \alpha_g-\alpha_d.
+\end{equation}
+Substituting the optimal controls into the HJB gives the nonlinear first-order ODE
+\begin{equation}
+    \boxed{
+    \begin{aligned}
+    0=
+    &\delta\log c(Z)
+    +\alphabar(Z)
+    +\Gamma\log\frac{\Gamma\theta c(Z)}{\delta}
+    +\Gamma\left[(1-Z)\log q_d(Z)+Z\log q_g(Z)\right]
+    -\delta v(Z)
+    \\
+    &+Z(1-Z)
+    \left[
+    \Delalpha
+    +\Gamma\log\frac{q_g(Z)}{q_d(Z)}
+    \right]v'(Z),
+    \end{aligned}
+    }
+\end{equation}
+where
+\begin{equation}
+    q_d(Z)=1-Zv'(Z),
+    \qquad
+    q_g(Z)=1+(1-Z)v'(Z).
+\end{equation}
+This equation is first order because there is no random capital shock. With random capital shocks, a diffusion term in $Z$ would appear and the equation would become second order.
+
+\section{Analytical Solution: What Is Closed Form?}
+
+The general asymmetric model does not usually admit a closed-form solution for $v(Z)$ because the value-function equation is nonlinear in both $v(Z)$ and $v'(Z)$. However, the following objects are analytical under common adjustment costs:
+\begin{align}
+    c(Z)
+    &=
+    \frac{\delta\left[1+\theta\Abar(Z)\right]}{\theta(\delta+\Gamma)}, \\
+    \ibar(Z)
+    &=
+    \frac{\Gamma\theta\Abar(Z)-\delta}{\theta(\delta+\Gamma)}, \\
+    i^g-i^d
+    &=
+    \frac{\Gamma c(Z)}{\delta}v'(Z).
+\end{align}
+Thus, the only unknown object needed for the investment split is the value-function slope $v'(Z)$.
+
+\subsection{Exact Symmetric Benchmark}
+
+If
+\begin{equation}
+    A_d=A_g=A,
+    \qquad
+    \alpha_d=\alpha_g=\alpha,
+\end{equation}
+then the composition of capital is irrelevant and
+\begin{equation}
+    v'(Z)=0.
+\end{equation}
+Therefore
+\begin{equation}
+    q_d(Z)=q_g(Z)=1,
+\end{equation}
+and
+\begin{equation}
+    i^d=i^g=i^*.
+\end{equation}
+The closed-form consumption ratio is
+\begin{equation}
+    c^*
+    =
+    \frac{\delta(1+\theta A)}{\theta(\delta+\Gamma)}.
+\end{equation}
+The closed-form investment rate is
+\begin{equation}
+    i^*
+    =
+    \frac{\Gamma\theta A-\delta}{\theta(\delta+\Gamma)}.
+\end{equation}
+The value function is constant in $Z$ and satisfies
+\begin{equation}
+    \delta v
+    =
+    \delta\log c^*
+    +\alpha
+    +\Gamma\log\frac{\Gamma\theta c^*}{\delta}.
+\end{equation}
+Hence
+\begin{equation}
+    \boxed{
+    v
+    =
+    \log c^*
+    +\frac{\alpha}{\delta}
+    +\frac{\Gamma}{\delta}\log\frac{\Gamma\theta c^*}{\delta}.
+    }
+\end{equation}
+
+\section{Perturbation Approximation}
+
+Now suppose the two capitals are close to symmetric. Define
+\begin{equation}
+    \DelA\equiv A_g-A_d,
+    \qquad
+    \Delalpha\equiv \alpha_g-\alpha_d.
+\end{equation}
+Treat $\DelA$ and $\Delalpha$ as small. Let $W(A,\alpha)$ denote the symmetric value from the previous section:
+\begin{equation}
+    W(A,\alpha)
+    =
+    \log c^*(A)
+    +\frac{\alpha}{\delta}
+    +\frac{\Gamma}{\delta}\log\frac{\Gamma\theta c^*(A)}{\delta},
+\end{equation}
+where
+\begin{equation}
+    c^*(A)=\frac{\delta(1+\theta A)}{\theta(\delta+\Gamma)}.
+\end{equation}
+A first-order approximation is
+\begin{equation}
+    \boxed{
+    v(Z)
+    \approx
+    W\left(\Abar(Z),\alphabar(Z)\right).
+    }
+\end{equation}
+Differentiating gives
+\begin{equation}
+    v'(Z)
+    \approx
+    W_A\left(\Abar(Z),\alphabar(Z)\right)\DelA
+    +
+    W_\alpha\left(\Abar(Z),\alphabar(Z)\right)\Delalpha.
+\end{equation}
+The envelope derivatives are
+\begin{equation}
+    W_A(A,\alpha)=\frac{1}{c^*(A)},
+    \qquad
+    W_\alpha(A,\alpha)=\frac{1}{\delta}.
+\end{equation}
+Since $c(Z)=c^*(\Abar(Z))$, the perturbation approximation is
+\begin{equation}
+    \boxed{
+    v'(Z)
+    \approx
+    \frac{A_g-A_d}{c(Z)}
+    +
+    \frac{\alpha_g-\alpha_d}{\delta}.
+    }
+\end{equation}
+The corresponding investment-rate wedge is
+\begin{equation}
+    \boxed{
+    i^g-i^d
+    \approx
+    \frac{\Gamma}{\delta}(A_g-A_d)
+    +
+    \frac{\Gamma c(Z)}{\delta^2}(\alpha_g-\alpha_d).
+    }
+\end{equation}
+If $\alpha_d=\alpha_g$, this simplifies to
+\begin{equation}
+    \boxed{
+    i^g-i^d
+    \approx
+    \frac{\Gamma}{\delta}(A_g-A_d).
+    }
+\end{equation}
+This expression is useful because it shows directly how a green-productivity advantage affects the optimal investment split. A higher $A_g$ raises the marginal value of green capital, which raises $i^g$ relative to $i^d$.
+
+\section{Finite Difference Method for the Deterministic HJB}
+
+The exact value function can be computed by solving the nonlinear first-order HJB on a grid for $Z\in[0,1]$. Since the equation is deterministic and first order, an upwind finite difference scheme is preferable to a centered difference scheme.
+
+\subsection{Step 1: Choose a Grid}
+
+Choose $N+1$ grid points
+\begin{equation}
+    Z_n=n\Delta Z,
+    \qquad
+    n=0,1,\ldots,N,
+    \qquad
+    \Delta Z=\frac{1}{N}.
+\end{equation}
+Let $v_n$ approximate $v(Z_n)$.
+
+\subsection{Step 2: Set Boundary Values}
+
+At $Z=0$, the economy contains only dirty capital. The boundary value is the one-capital dirty value:
+\begin{equation}
+    v_0
+    =
+    \log c_d
+    +\frac{\alpha_d}{\delta}
+    +\frac{\Gamma}{\delta}\log\frac{\Gamma\theta c_d}{\delta},
+\end{equation}
+where
+\begin{equation}
+    c_d=\frac{\delta(1+\theta A_d)}{\theta(\delta+\Gamma)}.
+\end{equation}
+At $Z=1$, the economy contains only green capital. The boundary value is
+\begin{equation}
+    v_N
+    =
+    \log c_g
+    +\frac{\alpha_g}{\delta}
+    +\frac{\Gamma}{\delta}\log\frac{\Gamma\theta c_g}{\delta},
+\end{equation}
+where
+\begin{equation}
+    c_g=\frac{\delta(1+\theta A_g)}{\theta(\delta+\Gamma)}.
+\end{equation}
+
+\subsection{Step 3: Initialize the Interior}
+
+A useful initial guess is the perturbation approximation:
+\begin{equation}
+    v_n^{(0)}=W\left(\Abar(Z_n),\alphabar(Z_n)\right),
+    \qquad n=1,\ldots,N-1.
+\end{equation}
+This provides a smooth starting point close to the exact solution when heterogeneity is moderate.
+
+\subsection{Step 4: Construct One-Sided Derivatives}
+
+For an interior node $n$, define the backward and forward differences:
+\begin{equation}
+    D^-v_n=\frac{v_n-v_{n-1}}{\Delta Z},
+    \qquad
+    D^+v_n=\frac{v_{n+1}-v_n}{\Delta Z}.
+\end{equation}
+For any candidate slope $p$, define
+\begin{equation}
+    q_d(p;Z_n)=1-Z_np,
+    \qquad
+    q_g(p;Z_n)=1+(1-Z_n)p.
+\end{equation}
+Given $p$, compute
+\begin{equation}
+    c_n=\frac{\delta\left[1+\theta\Abar(Z_n)\right]}{\theta(\delta+\Gamma)},
+\end{equation}
+\begin{equation}
+    i^d_n(p)=\frac{\Gamma c_n q_d(p;Z_n)}{\delta}-\frac{1}{\theta},
+    \qquad
+    i^g_n(p)=\frac{\Gamma c_n q_g(p;Z_n)}{\delta}-\frac{1}{\theta}.
+\end{equation}
+Then compute the drift of $Z$:
+\begin{equation}
+    \mu_Z(p;Z_n)
+    =
+    Z_n(1-Z_n)
+    \left[
+    \phi_g(i^g_n(p))-\phi_d(i^d_n(p))
+    \right].
+\end{equation}
+
+\subsection{Step 5: Use an Upwind Derivative}
+
+The upwind slope is chosen according to the sign of the drift:
+\begin{equation}
+    p_n=
+    \begin{cases}
+    D^-v_n, & \text{if } \mu_Z(Z_n)\geq 0,\\
+    D^+v_n, & \text{if } \mu_Z(Z_n)<0.
+    \end{cases}
+\end{equation}
+The intuition is simple. If $\mu_Z>0$, the state moves to the right, so the relevant derivative is the backward derivative. If $\mu_Z<0$, the state moves to the left, so the relevant derivative is the forward derivative.
+
+Because $\mu_Z$ depends on the derivative $p_n$, one can choose the upwind direction using the drift from the previous iteration, or solve the nonlinear upwind equations directly with Newton's method.
+
+\subsection{Step 6: Form the Nonlinear Residual}
+
+At each interior node, define the residual
+\begin{equation}
+    R_n(v)
+    =
+    \delta\log c_n
+    -\delta v_n
+    +(1-Z_n)\phi_d(i^d_n)
+    +Z_n\phi_g(i^g_n)
+    +
+    \mu_Z(Z_n) p_n.
+\end{equation}
+The finite difference approximation to the HJB is
+\begin{equation}
+    R_n(v)=0,
+    \qquad n=1,\ldots,N-1.
+\end{equation}
+Together with the two boundary conditions, this gives a nonlinear system for
+\begin{equation}
+    (v_0,v_1,\ldots,v_N).
+\end{equation}
+
+\subsection{Step 7: Solve the Nonlinear System}
+
+There are two common approaches.
+
+\paragraph{Newton method.}
+Solve
+\begin{equation}
+    R(v)=0
+\end{equation}
+using Newton or a damped Newton method. Damping is useful because the residual is nonlinear in $v'$ through $q_d$, $q_g$, and the logarithms.
+
+\paragraph{Policy iteration.}
+Given a guess $v^{(m)}$, compute the slope, the implied controls, and the drift. Then solve the linear equation
+\begin{equation}
+    \delta v^{(m+1)}_n
+    =
+    \delta\log c_n
+    +(1-Z_n)\phi_d(i^{d,(m)}_n)
+    +Z_n\phi_g(i^{g,(m)}_n)
+    +\mu^{(m)}_{Z,n}p^{(m+1)}_n,
+\end{equation}
+using the same upwind direction. Iterate until
+\begin{equation}
+    \max_n |v^{(m+1)}_n-v^{(m)}_n|
+\end{equation}
+is below a chosen tolerance.
+
+\subsection{Step 8: Recover the Controls}
+
+Once the fixed point $v_n$ is obtained, compute the numerical derivative $p_n$ using the upwind rule. Then compute
+\begin{equation}
+    q_{d,n}=1-Z_np_n,
+    \qquad
+    q_{g,n}=1+(1-Z_n)p_n,
+\end{equation}
+\begin{equation}
+    c_n=\frac{\delta\left[1+\theta\Abar(Z_n)\right]}{\theta(\delta+\Gamma)},
+\end{equation}
+\begin{equation}
+    i^d_n=\frac{\Gamma c_n q_{d,n}}{\delta}-\frac{1}{\theta},
+    \qquad
+    i^g_n=\frac{\Gamma c_n q_{g,n}}{\delta}-\frac{1}{\theta}.
+\end{equation}
+Finally, aggregate investment is
+\begin{equation}
+    \ibar_n=(1-Z_n)i^d_n+Z_ni^g_n,
+\end{equation}
+and the investment wedge is
+\begin{equation}
+    i^g_n-i^d_n=\frac{\Gamma c_n}{\delta}p_n.
+\end{equation}
+
+\section{Summary}
+
+For the deterministic two-capital adjustment-cost model:
+\begin{enumerate}[label=(\roman*)]
+    \item Total capital evolves according to
+    \begin{equation}
+        \dot{\log K}=(1-Z)\phi_d(i^d)+Z\phi_g(i^g).
+    \end{equation}
+    \item The green-capital share evolves according to
+    \begin{equation}
+        \dot Z=Z(1-Z)[\phi_g(i^g)-\phi_d(i^d)].
+    \end{equation}
+    \item The reduced value function satisfies
+    \begin{equation}
+        V(\log K,Z)=\log K+v(Z).
+    \end{equation}
+    \item The FOCs are
+    \begin{equation}
+        \frac{\delta}{c}=q_d\phi'_d(i^d),
+        \qquad
+        \frac{\delta}{c}=q_g\phi'_g(i^g).
+    \end{equation}
+    \item Under common adjustment costs, $c(Z)$ and $\ibar(Z)$ are exactly closed form.
+    \item The investment split is exactly closed form given $v'(Z)$.
+    \item The exact asymmetric value function solves a nonlinear first-order ODE.
+    \item The first-order perturbation gives
+    \begin{equation}
+        v'(Z)\approx \frac{A_g-A_d}{c(Z)}+\frac{\alpha_g-\alpha_d}{\delta},
+    \end{equation}
+    and therefore
+    \begin{equation}
+        i^g-i^d
+        \approx
+        \frac{\Gamma}{\delta}(A_g-A_d)
+        +
+        \frac{\Gamma c(Z)}{\delta^2}(\alpha_g-\alpha_d).
+    \end{equation}
+    \item The exact solution can be computed with an upwind finite difference method for the first-order deterministic HJB.
+\end{enumerate}
+
+\end{document}
