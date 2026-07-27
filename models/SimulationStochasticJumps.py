@@ -13,7 +13,7 @@ MODEL_DIR = os.path.dirname(os.path.abspath(__file__))
 if MODEL_DIR not in sys.path:
     sys.path.insert(0, MODEL_DIR)
 
-from params import PARAMS
+from params import PARAMS, investment_rate_activation
 
 from PostDamageIntermTech import PostDamageIntermTechModel
 from PostDamagePostTech import PostDamagePostTechModel
@@ -99,11 +99,41 @@ def infer_one_tech_jump_mode(export_folder):
     return False
 
 
+def infer_saved_economic_parameters(export_folder):
+    """Read run-specific calibration saved at training time so the stochastic
+    simulation is self-contained (mirrors SimulationDeterministic). Without this,
+    a sensitivity model trained with overridden sigma/Gamma/theta/psi0 would be
+    simulated under the baseline calibration, corrupting both the bounded control
+    activation (theta) and the capital/knowledge drifts."""
+    parameter_names = {"σ_d", "σ_g", "Γ_d", "Γ_g", "θ_d", "θ_g", "ψ0"}
+    candidates = [
+        os.path.join(export_folder, "PreDamagePreTech", "params.txt"),
+        os.path.join(export_folder, "PreDamageIntermTech", "params.txt"),
+        os.path.join(export_folder, "PostDamagePreTech", "params.txt"),
+        os.path.join(export_folder, "PostDamageIntermTech", "params.txt"),
+    ]
+    for path in candidates:
+        if not os.path.exists(path):
+            continue
+        overrides = {}
+        with open(path, "r") as parameter_file:
+            for line in parameter_file:
+                name, separator, value = line.partition(":")
+                if separator and name in parameter_names:
+                    try:
+                        overrides[name] = float(value.strip().split()[0])
+                    except (IndexError, ValueError):
+                        pass
+        if overrides:
+            return overrides
+    return {}
+
+
 def xi_label(xi):
     return f"{xi:g}"
 
 
-def make_nn_configs(num_hidden_layers=4, num_neurons=32):
+def make_nn_configs(num_hidden_layers=4, num_neurons=32, theta_d=None, theta_g=None):
     hidden = ["swish", "tanh", "tanh", "softplus"]
     output = ["softplus", "custom", "custom", "softplus"]
 
@@ -140,10 +170,12 @@ def make_nn_configs(num_hidden_layers=4, num_neurons=32):
         "final_activation": output[3],
     }
 
-    phi_g = 16.7
-    phi_d = 16.7
-    i_g_nn_config["final_activation"] = lambda x: 1.0 - (1.0 + 1.0 / phi_g) / (tf.exp(2 * x) + 1.0)
-    i_d_nn_config["final_activation"] = lambda x: 1.0 - (1.0 + 1.0 / phi_d) / (tf.exp(2 * x) + 1.0)
+    if theta_g is None:
+        theta_g = PARAMS["θ_g"]
+    if theta_d is None:
+        theta_d = PARAMS["θ_d"]
+    i_g_nn_config["final_activation"] = investment_rate_activation(theta_g)
+    i_d_nn_config["final_activation"] = investment_rate_activation(theta_d)
     return v_nn_config, i_g_nn_config, i_d_nn_config, i_r_nn_config
 
 
@@ -158,7 +190,13 @@ class RegimeModels:
         self.pi = infer_tech_jump_probability(self.export_folder)
         self.one_tech_jump_mode = infer_one_tech_jump_mode(self.export_folder)
 
-        v_cfg, ig_cfg, id_cfg, ir_cfg = make_nn_configs()
+        # Reload the run-specific calibration BEFORE building network configs so
+        # the bounded control activation (theta) and the simulated drifts use the
+        # values the model was actually trained with, not the baseline defaults.
+        self.saved_economic_parameters = infer_saved_economic_parameters(self.export_folder)
+        PARAMS.update(self.saved_economic_parameters)
+
+        v_cfg, ig_cfg, id_cfg, ir_cfg = make_nn_configs(theta_d=PARAMS["θ_d"], theta_g=PARAMS["θ_g"])
         params = {
             "batch_size": self.batch_size,
             "learning_rates": [1e-4, 1e-4, 1e-4, 1e-4],
@@ -367,7 +405,7 @@ def step_state(state, policy, evaluator, rng, dt):
     new_state["Y"] = max(0.0, y + drift_y * dt + diffusion_y * d_w_y)
 
     if tech_state < 2:
-        drift_log_r = -float(p["ζ"]) + float(p["ψ0"]) * np.exp(float(p["ψ1"]) * (np.log(max(i_r, 1e-12)) + log_k - log_r)) + 0.5 * sigma_kappa**2
+        drift_log_r = -float(p["ζ"]) + float(p["ψ0"]) * np.exp(float(p["ψ1"]) * (np.log(max(i_r, 1e-12)) + log_k - log_r)) - 0.5 * sigma_kappa**2
         new_state["logR"] = log_r + drift_log_r * dt + sigma_kappa * d_w_log_r
     else:
         new_state["logR"] = 0.0
@@ -597,26 +635,11 @@ def simulate(args):
                 )
 
     seed = args.seed
-    np.save(os.path.join(output_folder, f"logK_sim_{seed}.npy"), float_arrays["logK"])
-    np.save(os.path.join(output_folder, f"Z_array_{seed}.npy"), float_arrays["Z"])
-    np.save(os.path.join(output_folder, f"logR_array_{seed}.npy"), float_arrays["logR"])
-    np.save(os.path.join(output_folder, f"Y_array_{seed}.npy"), float_arrays["Y"])
-    np.save(os.path.join(output_folder, f"A_g_array_{seed}.npy"), float_arrays["A_g"])
-    np.save(os.path.join(output_folder, f"gamma3_array_{seed}.npy"), float_arrays["lambda3"])
-    np.save(os.path.join(output_folder, f"tech_state_array_{seed}.npy"), int_arrays["tech_state"])
-    np.save(os.path.join(output_folder, f"damage_state_array_{seed}.npy"), int_arrays["damage_state"])
-    np.save(os.path.join(output_folder, f"I_r_array_{seed}.npy"), float_arrays["I_r"])
-    np.save(os.path.join(output_folder, f"I_g_array_{seed}.npy"), float_arrays["I_g"])
-    np.save(os.path.join(output_folder, f"I_d_array_{seed}.npy"), float_arrays["I_d"])
-    np.save(os.path.join(output_folder, f"i_r_array_{seed}.npy"), float_arrays["i_r"])
-    np.save(os.path.join(output_folder, f"i_g_array_{seed}.npy"), float_arrays["i_g"])
-    np.save(os.path.join(output_folder, f"i_d_array_{seed}.npy"), float_arrays["i_d"])
-    np.save(os.path.join(output_folder, f"V_array_{seed}.npy"), float_arrays["V"])
-    np.save(os.path.join(output_folder, f"C_over_K_array_{seed}.npy"), float_arrays["C_over_K"])
-    np.save(os.path.join(output_folder, f"Y_over_K_array_{seed}.npy"), float_arrays["Y_over_K"])
-    np.save(os.path.join(output_folder, f"tech_event_code_array_{seed}.npy"), int_arrays["tech_event_code"])
-    np.save(os.path.join(output_folder, f"damage_event_array_{seed}.npy"), int_arrays["damage_event"])
-    np.save(os.path.join(output_folder, f"stage_array_{seed}.npy"), stage_array)
+    # The per-array .npy files were retired to control inode usage: every array
+    # below is already stored in the compact paths_controls_values_{seed}.npz
+    # bundle written next. Downstream plotters load the arrays from that bundle
+    # (with a legacy .npy fallback). Restore the individual np.save calls only if
+    # an external tool truly needs the loose files.
 
     np.savez_compressed(
         os.path.join(output_folder, f"paths_controls_values_{seed}.npz"),

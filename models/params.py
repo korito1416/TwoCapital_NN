@@ -99,3 +99,14 @@ def investment_rate_activation(theta):
         raise ValueError("theta must be positive")
 
     return lambda x: 1.0 - (1.0 + 1.0 / theta) / (tf.exp(2.0 * x) + 1.0)
+
+
+# --- Optional deterministic seeding for reproducible / cross-arm-comparable runs ---
+# Set MODEL_SEED in the environment to fix the stochastic collocation sampling and the
+# weight init. No-op when unset, so simulation / plotting importers are unaffected.
+_model_seed = os.environ.get("MODEL_SEED")
+if _model_seed not in (None, ""):
+    import tensorflow as _tf
+    import numpy as _np
+    _tf.random.set_seed(int(_model_seed))
+    _np.random.seed(int(_model_seed))
