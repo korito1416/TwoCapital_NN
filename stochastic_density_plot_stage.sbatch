@@ -36,7 +36,7 @@ echo "Y0 filter: ${Y0}"
 echo "Seed range: ${SEED_MIN}-${SEED_MAX}"
 start_time=$(date +%s)
 
-python -u plot_stochastic_control_densities.py \
+python -u analysis/plot_stochastic_control_densities.py \
     --export-folder "$EXPORT_FOLDER" \
     --control-group all \
     --comparison "$COMPARISON" \
@@ -44,7 +44,7 @@ python -u plot_stochastic_control_densities.py \
     --seed-min "$SEED_MIN" \
     --seed-max "$SEED_MAX"
 
-python -u plot_stochastic_marginal_value_densities.py \
+python -u analysis/plot_stochastic_marginal_value_densities.py \
     --export-folder "$EXPORT_FOLDER" \
     --comparison "$COMPARISON" \
     --y0 "$Y0" \

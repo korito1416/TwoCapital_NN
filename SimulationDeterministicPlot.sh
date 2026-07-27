@@ -8,14 +8,14 @@ jobout_name="${foldername}"
 # echo "Export folder: $pre_tech_pre_damage_export_folder"
 
 # Create directories if they don't exist
-mkdir -p "./bash/${jobout_name}"
-mkdir -p "./job-outs/${jobout_name}"
+mkdir -p "./logging/scripts/${jobout_name}"
+mkdir -p "./logging/${jobout_name}"
 
-job_file="./bash/${jobout_name}/SimDtmPlots.job"
+job_file="./logging/scripts/${jobout_name}/SimDtmPlots.job"
 echo "#!/bin/bash
 #SBATCH --job-name=DeterministricSimulation
-#SBATCH --output=./job-outs/${jobout_name}/SimDtmPlots.out
-#SBATCH --error=./job-outs/${jobout_name}/SimDtmPlots.err
+#SBATCH --output=./logging/${jobout_name}/SimDtmPlots.out
+#SBATCH --error=./logging/${jobout_name}/SimDtmPlots.err
 #SBATCH --time=0-1:00:00
 #SBATCH --account=pi-lhansen
 #SBATCH --partition=caslake

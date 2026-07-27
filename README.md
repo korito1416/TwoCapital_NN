@@ -108,8 +108,8 @@ More explicitly:
 6. Train `PreDamagePreTech` after steps 4 and 5.
 
 Use the dependency pattern in
-`submit_two_stage_parameter_sensitivity_sweep.sh` or
-`submit_dgm_two_stage_sweep.sh`: each HJB is a separate Slurm job and downstream
+`submit/submit_two_stage_parameter_sensitivity_sweep.sh` or
+`submit/submit_dgm_two_stage_sweep.sh`: each HJB is a separate Slurm job and downstream
 jobs use `afterok` dependencies.
 
 ### One Technology Jump Models
@@ -139,14 +139,14 @@ The fast, internally consistent workflow therefore:
 Run it with:
 
 ```bash
-bash submit_pi1_inherit_posttech_fast.sh
+bash submit/submit_pi1_inherit_posttech_fast.sh
 ```
 
 The default script submits intensity scales 1 and 2. Its output folder names
 begin with `OneTechJump_Pi_1p0_InheritedPostTech_`. No intermediate-stage
 folder should exist in those results.
 
-`submit_pi1_direct_one_jump_and_y12_diagnostics.sh` is the older full-retraining
+`submit/submit_pi1_direct_one_jump_and_y12_diagnostics.sh` is the older full-retraining
 alternative. It trains the post-tech networks again, so numerical differences
 from the two-stage post-tech solution can remain even though the HJB is the
 same.
@@ -155,7 +155,7 @@ same.
 
 This is a historical exercise in which the direct final-tech branch and the
 second technology jump are muted. It is launched by
-`submit_one_tech_jump_pi0_lr_sweep.sh`. It is not the direct-to-final one-jump
+`submit/submit_one_tech_jump_pi0_lr_sweep.sh`. It is not the direct-to-final one-jump
 model and should not be used for that comparison.
 
 ### Neural Network Structure
@@ -319,12 +319,12 @@ sim_jid=$(EXPORT_FOLDER="$MODEL" \
   SIMULATION_Y0="1.2" \
   SIMULATION_T="60" \
   SIMULATION_DT="0.08333333333333333" \
-  sbatch --parsable --export=ALL,MODE=simulate deterministic_stage.sbatch)
+  sbatch --parsable --export=ALL,MODE=simulate sbatch/deterministic_stage.sbatch)
 
 EXPORT_FOLDER="$MODEL" \
 SIMULATION_XIS="0.05,0.1,0.3,148.6" \
 sbatch --dependency="afterok:${sim_jid}" \
-  --export=ALL,MODE=plot deterministic_stage.sbatch
+  --export=ALL,MODE=plot sbatch/deterministic_stage.sbatch
 ```
 
 `148.6` is used as the numerical uncertainty-neutral/infinite-`xi` case.
@@ -377,13 +377,13 @@ Direct Slurm-array example:
 ```bash
 EXPORT_FOLDER="$MODEL" XI=0.1 N_PATHS=100 YEARS=60 \
 DT=0.08333333333333333 Y0=1.2 \
-sbatch --array=1-100 --export=ALL stochastic_jump_stage.sbatch
+sbatch --array=1-100 --export=ALL sbatch/stochastic_jump_stage.sbatch
 ```
 
 The standard three-model submission is:
 
 ```bash
-bash submit_stochastic_jump_simulations.sh
+bash submit/submit_stochastic_jump_simulations.sh
 ```
 
 With the defaults, each `xi` uses 100 array tasks and each task simulates 100
@@ -410,17 +410,17 @@ After stochastic simulations finish, run:
 
 ```bash
 EXPORT_FOLDER="$MODEL" Y0=1.2 SEED_MIN=1 SEED_MAX=100 \
-COMPARISON=pre-post sbatch --export=ALL stochastic_density_plot_stage.sbatch
+COMPARISON=pre-post sbatch --export=ALL sbatch/stochastic_density_plot_stage.sbatch
 ```
 
 The stage runs both plotting programs:
 
 ```bash
-python plot_stochastic_control_densities.py \
+python analysis/plot_stochastic_control_densities.py \
   --export-folder "$MODEL" --control-group all \
   --comparison pre-post --y0 1.2 --seed-min 1 --seed-max 100
 
-python plot_stochastic_marginal_value_densities.py \
+python analysis/plot_stochastic_marginal_value_densities.py \
   --export-folder "$MODEL" --comparison pre-post \
   --y0 1.2 --seed-min 1 --seed-max 100
 ```
@@ -456,7 +456,7 @@ plotter reports seeds and event counts in its summary CSV.
 
 ### SVRD Decomposition
 
-`compute_svrd_decomposition.py` computes the social value of R&D before the
+`analysis/compute_svrd_decomposition.py` computes the social value of R&D before the
 first jump by robust no-jump diffusion Monte Carlo. It decomposes the result:
 
 1. by potential first-jump contribution;
@@ -467,19 +467,19 @@ Run one model:
 ```bash
 MODEL_FOLDER="$(basename "$MODEL")" \
 SVRD_XIS="0.05 0.1 148.6" Y0=1.2 \
-bash submit_svrd_decomposition.sh
+bash submit/submit_svrd_decomposition.sh
 ```
 
 Run the standard one-jump and two two-stage models:
 
 ```bash
-bash submit_svrd_control_density_models.sh
+bash submit/submit_svrd_control_density_models.sh
 ```
 
 Direct Python example:
 
 ```bash
-python compute_svrd_decomposition.py \
+python analysis/compute_svrd_decomposition.py \
   --export-folder "$MODEL" --xi 0.1 --n-paths 512 \
   --years 80 --dt 0.08333333333333333 --y0 1.2
 ```
@@ -501,7 +501,7 @@ a diagnostic failure, not an economic result.
 Summarize logged training histories:
 
 ```bash
-python summarize_training_histories.py \
+python analysis/summarize_training_histories.py \
   --folder "$MODEL" --output "$MODEL/training_history_summary.csv"
 ```
 
@@ -509,7 +509,7 @@ Evaluate all trained networks on independent samples:
 
 ```bash
 EXPORT_FOLDER="$MODEL" SAMPLE_SIZE=16384 CHUNK_SIZE=1024 \
-sbatch --export=ALL network_audit_stage.sbatch
+sbatch --export=ALL sbatch/network_audit_stage.sbatch
 ```
 
 The audit reports PDE/FOC residual distributions, control distributions,
@@ -593,13 +593,13 @@ invoked through Slurm stage wrappers rather than by hand.
 | `models/SimulationStochasticJumps.py` | Supported stochastic diffusion/jump simulator with controls, values, event windows, and metadata. |
 | `models/SimulationRandom.py` | Legacy hardcoded six-regime random simulator. Retained for provenance; use `SimulationStochasticJumps.py` instead. |
 | `models/SimulationRandom_1.py` | Older simulator tied to another project path and obsolete imports. Not supported in this checkout. |
-| `audit_trained_networks.py` | Large independent-sample network/residual audit, optionally relative to a reference folder. |
-| `summarize_training_histories.py` | Writes initial, best, and final loss values from every stage's `training_history.csv`. |
-| `plot_stochastic_control_densities.py` | KDE plots for control rates, levels, and value around stochastic jump events. |
-| `plot_stochastic_marginal_value_densities.py` | Evaluates network derivatives on stochastic event states and plots `V_Kd`, `V_Kg`, and `-V_Y`. |
-| `plot_brown_capital_marginal_tech_jump.py` | Temperature profiles and FOC gaps for dirty-capital marginal values in selected regimes. |
-| `compute_svrd_decomposition.py` | Monte Carlo SVRD decomposition by potential jump and state channel. |
-| `generate_control_density_tex.py` | Generates the three hardcoded LaTeX density reports used by the current paper workflow. Edit `MODEL_SPECS` for other folders. |
+| `analysis/audit_trained_networks.py` | Large independent-sample network/residual audit, optionally relative to a reference folder. |
+| `analysis/summarize_training_histories.py` | Writes initial, best, and final loss values from every stage's `training_history.csv`. |
+| `analysis/plot_stochastic_control_densities.py` | KDE plots for control rates, levels, and value around stochastic jump events. |
+| `analysis/plot_stochastic_marginal_value_densities.py` | Evaluates network derivatives on stochastic event states and plots `V_Kd`, `V_Kg`, and `-V_Y`. |
+| `analysis/plot_brown_capital_marginal_tech_jump.py` | Temperature profiles and FOC gaps for dirty-capital marginal values in selected regimes. |
+| `analysis/compute_svrd_decomposition.py` | Monte Carlo SVRD decomposition by potential jump and state channel. |
+| `analysis/generate_control_density_tex.py` | Generates the three hardcoded LaTeX density reports used by the current paper workflow. Edit `MODEL_SPECS` for other folders. |
 | `models_dgm/PostDamagePostTech.py` | DGM-architecture version of the terminal post-damage/final-tech HJB. |
 | `models_dgm/PostDamageIntermTech.py` | DGM version of the post-damage/intermediate-tech HJB. |
 | `models_dgm/PostDamagePreTech.py` | DGM version of the post-damage/pre-tech HJB. |
@@ -617,18 +617,18 @@ are intended to be called by a `submit_*.sh` launcher.
 
 | File | Invocation and result |
 |---|---|
-| `one_tech_jump_stage.sbatch` | Submit with `STAGE`, `FOLDERNAME`, `PRETRAINED_FOLDER`, `TECH_JUMP_PROBABILITY`, and LR variables; trains one selected MLP regime and rejects intermediate stages when `pi=1`. |
-| `half_rd_stage.sbatch` | Trains one R&D-active regime for an intensity experiment; used when post-tech regimes are copied unchanged. |
-| `half_rd_full_stage.sbatch` | Trains any of the six MLP regimes with separate post-tech/active LR settings and selectable `MODEL_DIR`. |
-| `sensitivity_stage.sbatch` | Trains one regime with run-specific `sigma`, `Gamma`, `theta`, or `psi0` environment overrides. |
-| `dgm_stage.sbatch` | Trains one gated-DGM regime, including optional MLP-teacher output distillation. |
-| `deterministic_stage.sbatch` | `MODE=simulate` runs deterministic paths; `MODE=plot` creates aggregate figures. Requires `EXPORT_FOLDER`. |
-| `dgm_deterministic_stage.sbatch` | Same deterministic interface for DGM checkpoints. |
-| `stochastic_jump_stage.sbatch` | One stochastic array task. Requires `EXPORT_FOLDER` and `XI`; writes one seed's path/event files. |
-| `stochastic_density_plot_stage.sbatch` | Plots rates, levels, value, and marginal-value densities and creates the compact `SimulationResultsPlot` tree. |
-| `svrd_decomposition_stage.sbatch` | Runs one model/`xi` SVRD decomposition. |
-| `network_audit_stage.sbatch` | Runs residual/network audit and training-history summary for one folder. |
-| `brown_capital_marginal_stage.sbatch` | Runs dirty-capital marginal-value/FOC plots for all six regimes in `EXPORT_FOLDER`. |
+| `sbatch/one_tech_jump_stage.sbatch` | Submit with `STAGE`, `FOLDERNAME`, `PRETRAINED_FOLDER`, `TECH_JUMP_PROBABILITY`, and LR variables; trains one selected MLP regime and rejects intermediate stages when `pi=1`. |
+| `sbatch/half_rd_stage.sbatch` | Trains one R&D-active regime for an intensity experiment; used when post-tech regimes are copied unchanged. |
+| `sbatch/half_rd_full_stage.sbatch` | Trains any of the six MLP regimes with separate post-tech/active LR settings and selectable `MODEL_DIR`. |
+| `sbatch/sensitivity_stage.sbatch` | Trains one regime with run-specific `sigma`, `Gamma`, `theta`, or `psi0` environment overrides. |
+| `sbatch/dgm_stage.sbatch` | Trains one gated-DGM regime, including optional MLP-teacher output distillation. |
+| `sbatch/deterministic_stage.sbatch` | `MODE=simulate` runs deterministic paths; `MODE=plot` creates aggregate figures. Requires `EXPORT_FOLDER`. |
+| `sbatch/dgm_deterministic_stage.sbatch` | Same deterministic interface for DGM checkpoints. |
+| `sbatch/stochastic_jump_stage.sbatch` | One stochastic array task. Requires `EXPORT_FOLDER` and `XI`; writes one seed's path/event files. |
+| `sbatch/stochastic_density_plot_stage.sbatch` | Plots rates, levels, value, and marginal-value densities and creates the compact `SimulationResultsPlot` tree. |
+| `sbatch/svrd_decomposition_stage.sbatch` | Runs one model/`xi` SVRD decomposition. |
+| `sbatch/network_audit_stage.sbatch` | Runs residual/network audit and training-history summary for one folder. |
+| `sbatch/brown_capital_marginal_stage.sbatch` | Runs dirty-capital marginal-value/FOC plots for all six regimes in `EXPORT_FOLDER`. |
 
 ## Bash Submission File Reference
 
@@ -638,43 +638,43 @@ many launchers intentionally encode a specific completed experiment.
 
 | File | What it submits / produces | Status |
 |---|---|---|
-| `submit_pi1_inherit_posttech_fast.sh` | Recommended direct-final one-jump training, inherited post-tech checkpoints, deterministic paths, and plots for intensity 1 and 2. | Current |
-| `submit_stochastic_jump_simulations.sh` | Stochastic arrays for the standard one-jump, baseline two-stage, and doubled-intensity two-stage models. | Current |
-| `submit_inherited_pi1_stochastic_density.sh` | Stochastic arrays plus dependent density plots for the inherited direct-final one-jump model. | Current |
-| `submit_svrd_decomposition.sh` | SVRD jobs for one configurable model across `SVRD_XIS`. | Current |
-| `submit_svrd_control_density_models.sh` | SVRD jobs for the standard three comparison models. | Current |
-| `submit_two_stage_parameter_sensitivity_sweep.sh` | Four-LR sweeps for half capital volatility, half adjustment cost (`Gamma*2`, `theta/2`), and `psi0=0.05`, followed by deterministic analysis. | Current |
-| `submit_largebatch_retrain_stochastic_models.sh` | Large-batch continuation of the standard three stochastic models plus independent audits. | Current experiment |
-| `submit_largebatch_onejump_lr_sweep.sh` | Large-batch LR sweep for the direct-final one-jump model plus audits. | Current experiment |
-| `submit_dgm_two_stage_sweep.sh` | DGM width/layer/batch sweep over the six-regime dependency graph. | Experimental |
-| `submit_dgm_lr_sweep.sh` | DGM value/control LR sweep with teacher distillation settings. | Experimental |
-| `submit_deterministic_largebatch_dgm.sh` | Deterministic simulation/plot jobs for completed large-batch and DGM folders. | Experimental analysis |
-| `submit_additional_one_two_jump_lr_sweep.sh` | Historical broad LR and intensity sweep for one- and two-jump models, with deterministic first-jump plots. | Historical |
-| `submit_double_tech_intensity_lr_sweep.sh` | Doubled technology-intensity two-stage LR sweep; copies unchanged post-tech regimes. | Historical experiment |
-| `submit_half_rd_intensity.sh` | Initial half-technology-intensity training chain. | Historical experiment |
-| `submit_half_rd_lr_sweep.sh` | Full half-intensity LR sweep over all six regimes. | Historical experiment |
-| `submit_half_rd_lr_variants.sh` | Additional/continuation LR variants for half-intensity models. | Historical experiment |
-| `submit_deterministic_paths.sh` | Deterministic paths and plots for three hardcoded half-intensity folders. | Hardcoded analysis |
-| `submit_first_jump_density_diagnostics.sh` | First-jump deterministic density diagnostics for hardcoded trained folders. | Hardcoded analysis |
-| `submit_half_rd_deterministic_and_brown.sh` | Deterministic analysis and dirty-capital marginal-value plots for selected half-intensity models. | Hardcoded analysis |
-| `submit_one_tech_jump_pi0_lr_sweep.sh` | `pi=0` intermediate-only one-jump LR/intensity sweep. | Historical model |
-| `submit_pi1_direct_one_jump_and_y12_diagnostics.sh` | Full-retrained `pi=1` one-jump LR sweep plus deterministic `Y0=1.2` diagnostics. | Superseded by inherited workflow |
-| `submit_pi1_direct_deterministic_density.sh` | Deterministic first-jump plots for hardcoded direct-final one-jump folders. | Hardcoded analysis |
-| `submit_pi1_scale1_all_deterministic.sh` | Deterministic analysis for all matching `pi=1`, intensity-1 folders. | Hardcoded analysis |
-| `submit_one_jump_resimulations.sh` | Re-runs deterministic simulation/plot pairs for listed one-jump folders. | Hardcoded analysis |
-| `submit_stochastic_jump_scale2_remaining.sh` | Fills missing stochastic seeds for the doubled-intensity model; default array range is 9-100. | Repair/continuation |
-| `submit_logxi001_extension_sweep.sh` | Fine-tunes listed models on `logxi in [-5,5]`, then runs deterministic analysis including `xi=0.01`. | Historical fine-tuning |
-| `submit_logxi001_extension_low_lr_sweep.sh` | Two-block low-LR continuation for the `[-5,5]` extension. | Historical fine-tuning |
-| `submit_logxi001_extension_tiny_lr_sweep.sh` | Creates a temporary tiny-LR variant of the low-LR extension submitter and runs it. | Historical fine-tuning |
-| `submit_logxi_m4_three_model_sweep.sh` | Fine-tunes three selected models on `logxi in [-4,5]`, followed by deterministic paths at `xi>=0.02`. | Historical fine-tuning |
-| `submit_logxi_m4_rd05_sweep.sh` | `[-4,5]` continuation specifically for the half-intensity two-stage model. | Historical fine-tuning |
-| `SimulationDeterministic.sh` | Generates and submits a deterministic job for one hardcoded baseline folder. | Legacy wrapper; prefer `deterministic_stage.sbatch` |
+| `submit/submit_pi1_inherit_posttech_fast.sh` | Recommended direct-final one-jump training, inherited post-tech checkpoints, deterministic paths, and plots for intensity 1 and 2. | Current |
+| `submit/submit_stochastic_jump_simulations.sh` | Stochastic arrays for the standard one-jump, baseline two-stage, and doubled-intensity two-stage models. | Current |
+| `submit/submit_inherited_pi1_stochastic_density.sh` | Stochastic arrays plus dependent density plots for the inherited direct-final one-jump model. | Current |
+| `submit/submit_svrd_decomposition.sh` | SVRD jobs for one configurable model across `SVRD_XIS`. | Current |
+| `submit/submit_svrd_control_density_models.sh` | SVRD jobs for the standard three comparison models. | Current |
+| `submit/submit_two_stage_parameter_sensitivity_sweep.sh` | Four-LR sweeps for half capital volatility, half adjustment cost (`Gamma*2`, `theta/2`), and `psi0=0.05`, followed by deterministic analysis. | Current |
+| `submit/submit_largebatch_retrain_stochastic_models.sh` | Large-batch continuation of the standard three stochastic models plus independent audits. | Current experiment |
+| `submit/submit_largebatch_onejump_lr_sweep.sh` | Large-batch LR sweep for the direct-final one-jump model plus audits. | Current experiment |
+| `submit/submit_dgm_two_stage_sweep.sh` | DGM width/layer/batch sweep over the six-regime dependency graph. | Experimental |
+| `submit/submit_dgm_lr_sweep.sh` | DGM value/control LR sweep with teacher distillation settings. | Experimental |
+| `submit/submit_deterministic_largebatch_dgm.sh` | Deterministic simulation/plot jobs for completed large-batch and DGM folders. | Experimental analysis |
+| `submit/submit_additional_one_two_jump_lr_sweep.sh` | Historical broad LR and intensity sweep for one- and two-jump models, with deterministic first-jump plots. | Historical |
+| `submit/submit_double_tech_intensity_lr_sweep.sh` | Doubled technology-intensity two-stage LR sweep; copies unchanged post-tech regimes. | Historical experiment |
+| `submit/submit_half_rd_intensity.sh` | Initial half-technology-intensity training chain. | Historical experiment |
+| `submit/submit_half_rd_lr_sweep.sh` | Full half-intensity LR sweep over all six regimes. | Historical experiment |
+| `submit/submit_half_rd_lr_variants.sh` | Additional/continuation LR variants for half-intensity models. | Historical experiment |
+| `submit/submit_deterministic_paths.sh` | Deterministic paths and plots for three hardcoded half-intensity folders. | Hardcoded analysis |
+| `submit/submit_first_jump_density_diagnostics.sh` | First-jump deterministic density diagnostics for hardcoded trained folders. | Hardcoded analysis |
+| `submit/submit_half_rd_deterministic_and_brown.sh` | Deterministic analysis and dirty-capital marginal-value plots for selected half-intensity models. | Hardcoded analysis |
+| `submit/submit_one_tech_jump_pi0_lr_sweep.sh` | `pi=0` intermediate-only one-jump LR/intensity sweep. | Historical model |
+| `submit/submit_pi1_direct_one_jump_and_y12_diagnostics.sh` | Full-retrained `pi=1` one-jump LR sweep plus deterministic `Y0=1.2` diagnostics. | Superseded by inherited workflow |
+| `submit/submit_pi1_direct_deterministic_density.sh` | Deterministic first-jump plots for hardcoded direct-final one-jump folders. | Hardcoded analysis |
+| `submit/submit_pi1_scale1_all_deterministic.sh` | Deterministic analysis for all matching `pi=1`, intensity-1 folders. | Hardcoded analysis |
+| `submit/submit_one_jump_resimulations.sh` | Re-runs deterministic simulation/plot pairs for listed one-jump folders. | Hardcoded analysis |
+| `submit/submit_stochastic_jump_scale2_remaining.sh` | Fills missing stochastic seeds for the doubled-intensity model; default array range is 9-100. | Repair/continuation |
+| `submit/submit_logxi001_extension_sweep.sh` | Fine-tunes listed models on `logxi in [-5,5]`, then runs deterministic analysis including `xi=0.01`. | Historical fine-tuning |
+| `submit/submit_logxi001_extension_low_lr_sweep.sh` | Two-block low-LR continuation for the `[-5,5]` extension. | Historical fine-tuning |
+| `submit/submit_logxi001_extension_tiny_lr_sweep.sh` | Creates a temporary tiny-LR variant of the low-LR extension submitter and runs it. | Historical fine-tuning |
+| `submit/submit_logxi_m4_three_model_sweep.sh` | Fine-tunes three selected models on `logxi in [-4,5]`, followed by deterministic paths at `xi>=0.02`. | Historical fine-tuning |
+| `submit/submit_logxi_m4_rd05_sweep.sh` | `[-4,5]` continuation specifically for the half-intensity two-stage model. | Historical fine-tuning |
+| `SimulationDeterministic.sh` | Generates and submits a deterministic job for one hardcoded baseline folder. | Legacy wrapper; prefer `sbatch/deterministic_stage.sbatch` |
 | `SimulationDeterministicPlot.sh` | Generates and submits a plotting job for one hardcoded baseline folder. | Legacy wrapper |
 | `SimulationRandom.sh` | Generates 100 hardcoded legacy `SimulationRandom.py` jobs for one overwritten `xi` value. | Legacy; do not use for new runs |
-| `submit_half_rd_fourier_resnet_distill.sh` | Fourier-ResNet half-intensity distillation experiment. | Not runnable: `models_fourier_resnet/` is absent |
-| `submit_half_rd_piratenet.sh` | PirateNet half-intensity architecture experiment. | Not runnable: `models_piratenet/` is absent |
-| `submit_half_rd_piratenet_biglr_warmup.sh` | PirateNet large-LR warmup sweep. | Not runnable: `models_piratenet/` is absent |
-| `submit_half_rd_piratenet_scheduler_sweep.sh` | PirateNet scheduler sweep. | Not runnable: `models_piratenet/` is absent |
+| `submit/submit_half_rd_fourier_resnet_distill.sh` | Fourier-ResNet half-intensity distillation experiment. | Not runnable: `models_fourier_resnet/` is absent |
+| `submit/submit_half_rd_piratenet.sh` | PirateNet half-intensity architecture experiment. | Not runnable: `models_piratenet/` is absent |
+| `submit/submit_half_rd_piratenet_biglr_warmup.sh` | PirateNet large-LR warmup sweep. | Not runnable: `models_piratenet/` is absent |
+| `submit/submit_half_rd_piratenet_scheduler_sweep.sh` | PirateNet scheduler sweep. | Not runnable: `models_piratenet/` is absent |
 
 ## DGM Architecture
 

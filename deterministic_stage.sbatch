@@ -26,10 +26,10 @@ case "${MODE:-simulate}" in
     simulate)
         SIMULATION_XIS="${SIMULATION_XIS:-0.01,0.05,0.1,148.6}" \
         SIMULATION_Y0="${SIMULATION_Y0:-1.2}" \
-            python3 models/SimulationDeterministic.py "$EXPORT_FOLDER"
+            python3 "${MODEL_DIR:-models}/SimulationDeterministic.py" "$EXPORT_FOLDER"
         ;;
     plot)
-        python3 models/SimulationDeterministicPlot.py "$EXPORT_FOLDER"
+        python3 "${MODEL_DIR:-models}/SimulationDeterministicPlot.py" "$EXPORT_FOLDER"
         ;;
     *)
         echo "Unknown MODE: ${MODE}" >&2
