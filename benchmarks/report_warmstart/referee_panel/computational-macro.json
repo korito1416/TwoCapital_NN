@@ -1,0 +1,89 @@
+{
+ "verdict": "The experimental work is careful (controlled arms, matched schedules, seed pairs, honest incident log) and the empirical facts are important and almost certainly real. But the headline interpretation — \"the warm start selects the solution,\" implying the model admits two economies — is not defensible as stated. This is a concave planner problem (log utility, concave log adjustment costs, linear resource constraint; the robust min with convex relative-entropy penalty preserves concavity), so under standard growth/transversality conditions the sequence problem has a unique value function; multiplicity can therefore only be a property of the numerical formulation. And the numerical formulation is under-determined by construction: DGM minimizes the interior residual on a box with no boundary or growth conditions, and the team's own prior work established that the residual pins the value level only through the −δV term (δ=0.01). The observed nber–reference difference lies almost exactly in that near-null direction: a uniform +0.6 level shift across all four jump states perturbs the residual by only δ·0.6 = 6e-3 (jump terms see only cross-regime differences, which a uniform shift preserves) — the same order as the achieved residuals. Meanwhile ΔV=0.6 is an 82% certainty-equivalent-consumption difference, which two genuine solutions of one concave problem cannot both deliver. The paper-grade-residual tie and the \"nber is 10x better on the reference's own path\" fact do not arbitrate, because each residual is a self-consistency check of its own coupled system (own controls, own frozen downstream values) on the wrong domain. The note must either (a) run the arbitration experiments below — FD benchmark in the two 3-state regimes, Monte Carlo policy-evaluation dominance, frozen-downstream cross-substitution, global/own-path/boundary residual audit — or (b) recast the claim as \"warm starts select among low-residual approximations of an under-identified discretized problem,\" which is itself a publishable and probably correct finding. My strong prior, given the null-direction alignment, is one solution plus one systematically biased approximation (possibly the reference is the biased one — the experiments will say which).",
+ "major_points": [
+  "Uniqueness is a theorem-shaped objection, not a taste: the planner problem is concave (log utility, concave phi_j, linear constraint; robust min with convex entropy penalty preserves concavity via the Isaacs condition), so the true value function is unique under standard growth conditions. 'The model genuinely admits two economies' requires exhibiting a specific non-concavity or a failure of the comparison principle; absent that, the claim must be recast as multiplicity of APPROXIMATE solutions of the boundary-condition-free discretized problem. State which claim the note is making.",
+  "The difference pattern is the known near-null direction of the residual, and the note does not confront this. A uniform +0.6 level shift in ALL jump states enters the residual only through -delta*V (jump terms depend on V'-V only), i.e. 6e-3 — comparable to the achieved residuals 1.4e-3–2.8e-3; residual/delta gives level slack 0.28 (reference) and 0.025 (nber), so the welfare gap is within a few multiples of what the reference's own residual can even detect. The team's own level-anchor finding (d(residual)/d(level) = -delta, measured) PREDICTS exactly this degeneracy. The marginal-value differences (x1.6 capital, x1.8 knowledge) co-move with controls through the FOCs, so the residual can remain small along the whole (V, policy) manifold — under-identification, not economics, is the parsimonious reading.",
+  "The '10x lower HJB error along the reference's own path' statistic cannot favor nber as claimed: each arm's residual is evaluated with its OWN controls and its OWN frozen downstream value functions, so it measures self-consistency of that arm's coupled system at those state points, not distance to the true solution. Two distinct near-fixed-points of the backward-coupled system are each self-consistent. Also the reference-path tube is the wrong domain: nber's economy visits different states (2x investment implies faster capital growth; note logK_0 = log 880 ≈ 6.78 against a box top of 7, so both arms' 60-year paths likely exit the sampled box — extrapolation must be reported).",
+  "No external benchmark is used, although two of the four jump states are 3-state (logK, Z, Y — post-damage/post-tech and pre-damage/post-tech in the pi=1 model) and the team already has FD/ADI machinery for post-damage/post-tech. The +0.6 level and higher marginal values appear ALREADY in the terminal regime, so a single 3-state FD solve at fixed (xi, lambda_3) likely settles the entire dispute regime by regime. This is mandatory before any 'two economies' language (Experiment E1).",
+  "No economics-based arbitration is attempted. Monte Carlo policy evaluation is cheap and decisive: simulate each arm's POLICY, compute realized discounted (robust) utility, and check (i) internal consistency V_arm(x0) vs realized value of its own policy, and (ii) dominance — the true problem is a max, so if nber's claimed V is higher but its policy delivers lower realized welfare, its value function is overstated and it is a biased approximation, full stop (Experiment E2). First establish whether the gap already exists at xi = infinity, where the objective is a plain expectation.",
+  "Feasibility and magnitude audit of the nber economy is missing: report C/K > 0 and its level along the nber path (2x green + 3.8x dirty investment out of the same output), admissibility of i_r, whether V is increasing in logK, V_y <= 0, and — decisively — whether nber's V (level +0.6 everywhere) violates a computable no-damage upper bound V <= V_bar where V_bar is the closed-form/1-D-ODE value of the frictionless-climate economy (N ≡ 1, best technology). An 82% certainty-equivalent gap makes bound violations plausible and checkable in an afternoon (Experiment E6)."
+ ],
+ "minor_points": [
+  "n=2 seeds per arm is too few for the necessity claim 'cold does not converge on the reference's own schedule' — 'one seed collapses, the other lands far' is a description of two draws. See Experiment E7.",
+  "The exp-clamp [-60,60] was added to models_warmstart/ mid-study for all ARMS, but the reference run predates it: confirm the reference base was trained under identical code, or flag the reference as the one non-apples-to-apples object in the comparison.",
+  "The nber base comes from a DIFFERENT calibration. Report function-space distance (RMS of V and policies on the fixed LHS sample) from each arm's initialization to its final solution: if the nber arm barely moved from its init in the R&D-active states, 'converged alternative solution' should read 'trapped near a foreign calibration's solution that the residual cannot reject.'",
+  "Report normalized residuals (residual divided by the sum of absolute Hamiltonian term magnitudes, or by delta*|V|) alongside raw RMS, so 'paper-grade 1e-3' is interpretable as a relative accuracy; also state explicitly whether tabulated loss_v is the training loss or the true rhs - delta*V residual.",
+  "Finding 3's 'the delivered paths retain a memory of it' is speculation with a 12% seed spread; it also strains the summary line 'within-method seed spread is small.' Track the perturb arms' function-space distance to reference vs to nber across checkpoints instead of asserting memory.",
+  "Report the fraction of each arm's simulated 60-year path (states logK, Z, Y, logR) lying outside the training box, per jump state — all path-RMS error statistics that mix interpolation and extrapolation regions should be split accordingly.",
+  "The analytic-arm post-mortem (level-right/shape-wrong overflows through exp(-(V'-V)/xi)) is genuinely informative and worth keeping; it directly motivates the shape-aware initializations proposed below and is additional evidence that cross-regime value DIFFERENCES, not levels, are what the training dynamics see."
+ ],
+ "demanded_experiments": [
+  {
+   "name": "E1: Finite-difference arbitration in the 3-state regimes",
+   "design": "Solve post-damage/post-tech AND pre-damage/post-tech (both 3-state: logK, Z, Y; the pre-damage one uses the FD post-damage values in its damage-jump term) by upwind FD with policy iteration / false transient on the training box, at fixed (xi=0.05, lambda_3 = middle value) and again at xi=infinity. Establish FD discretization error by grid halving (e.g. 101^3 -> 201^3, Richardson). Compare V level, V_logK, V_Z, V_y, and FOC-implied i_g, i_d for the reference and the nber arm against FD on the interior grid (2 cells off each boundary).",
+   "decides": "Whichever arm lies within FD discretization error (RMS and max deviation) is the solution in these regimes; the other is a biased approximation. If BOTH deviate far beyond discretization error, or FD itself is non-unique under refinement, the multiplicity claim earns escalation. Since the +0.6 level and x1.6 marginal values appear already in the terminal regime, this single experiment likely decides the headline."
+  },
+  {
+   "name": "E2: Monte Carlo policy evaluation and dominance",
+   "design": "Simulate N=10,000 paths, T=400 years (e^{-delta*T} ≈ 0.018; add each arm's own terminal V as tail correction and report tail sensitivity), from x0, under (a) the reference policy and (b) the nber policy, with jumps drawn at model intensities. First at xi=infinity (plain expectation of discounted delta*log C-tilde); then at xi=0.05 evaluating the robust objective under each arm's own closed-form distortions h*, g* (which upper-bounds its claimed value).",
+   "decides": "(i) Internal consistency: |V_arm(x0) - realized value of its own policy| <= 3 MC standard errors, per arm. (ii) Dominance: if V_nber(x0) > V_ref(x0) but realized welfare under the nber policy is LOWER than under the reference policy (beyond MC error), nber's value function is overstated and the two-economies claim dies; symmetrically if the reference loses, the reference is the biased object."
+  },
+  {
+   "name": "E3: Frozen-downstream cross-substitution",
+   "design": "Retrain only the initial (pre-damage/pre-tech) state under the reference config in a 2x2: initialization in {reference weights, nber weights} x frozen downstream value functions in {reference's, nber's}. Everything else identical (schedule, batch, sampling, seeds). Measure final V and policies on the fixed LHS sample and the year-60 I_g/I_d.",
+   "decides": "If, given IDENTICAL downstream values, both initializations converge to the same upstream solution (function-space RMS below the within-method seed spread), the 'selection' is entirely inherited from downstream regimes and E1 on the terminal regime settles everything. If they still differ, the single-regime PDE is under-determined as posed (missing boundary/growth conditions) — report where the difference concentrates (boundary vs interior)."
+  },
+  {
+   "name": "E4: Global, own-path, and boundary residual audit",
+   "design": "Evaluate the true HJB residual (rhs - delta*V form, each arm's own controls and downstream values) for both arms, per jump state, at xi in {0.05, infinity}, on: (a) 10^6-point LHS sample of the full box; (b) the nber solution's OWN simulated 60-year path; (c) the six box boundary faces; (d) split all path statistics by inside/outside the training box. Report 50/95/max quantiles, not only RMS.",
+   "decides": "If nber's residual is low on the reference-path tube but an order of magnitude larger on its own visited states, near boundaries, or off-path, the 'accuracy even favors the alternative' claim is retracted. If both arms have comparably low residual EVERYWHERE on the box while delivering different economies, that is direct evidence the interior-residual problem is under-determined (supports the recast claim, feeds E5)."
+  },
+  {
+   "name": "E5: Residual sensitivity along the ref->nber direction (formalize the null-space argument)",
+   "design": "Form Delta = (V_nber - V_ref, policy_nber - policy_ref) on the fixed sample; decompose into (i) the uniform level component (~+0.6), (ii) slope/shape components, (iii) control components with FOC re-optimization allowed. Compute the global residual RMS along V_ref + t*Delta for t in [0,1] for each component and jointly, per regime.",
+   "decides": "If the residual along the full path from reference to nber never exceeds a few times the achieved residual floor (i.e., the two are connected by a low-residual valley), the objects are residual-indistinguishable by construction and the note MUST be reframed as under-identification of the discretized problem. If a large residual barrier separates them, they are genuinely distinct approximate fixed points and the FD/MC arbitration (E1/E2) becomes the decisive evidence."
+  },
+  {
+   "name": "E6: Bounds, monotonicity, and feasibility audit",
+   "design": "For both arms, over a dense box sample and along both simulated paths: check V increasing in logK; V_y <= 0; C/K > 0 with its level reported; i_r admissible; g* distortions finite; and compare V pointwise against the computable no-climate upper bound V_bar (economy with N ≡ 1, no jumps, both sectors at the best productivity — closed form up to a 1-D ODE in Z).",
+   "decides": "Any violation by an arm (e.g., nber's +0.6 level pushing V above the no-damage bound, or C/K near zero on its high-investment path making delta*log(C/K) inconsistent with its claimed welfare) refutes that arm outright, independent of all residual statistics."
+  },
+  {
+   "name": "E7: Cold-start necessity with adequate power",
+   "design": "Six cold seeds under (a) the reference schedule, (b) control-network peak LR reduced 4e-3 -> 4e-4 (the audited 400x-hot control LR is a prime suspect for the collapse), and (c) the never-run xi-homotopy curriculum (M6). Everything else at the reference config.",
+   "decides": "'A warm start is REQUIRED' stands only if 0/6 seeds converge under (a) AND under the best of (b)/(c), where convergence = final fixed-sample residual < 3e-3 AND within-method year-60 path spread < 5%. Otherwise soften to 'cold starts are unreliable under the reference hyperparameters.'"
+  }
+ ],
+ "initialization_proposals": [
+  {
+   "name": "FD-seeded initialization",
+   "construction": "Solve the two 3-state regimes by FD (E1 machinery) at a coarse grid of (xi, lambda_3) values; regress each regime's value net onto the FD solution (and controls onto FD-implied FOC controls). For the two R&D-active 4-state regimes, extend the FD value with a logR profile from a 1-D knowledge ODE (psi_r drift, FOC-consistent i_r) before regression.",
+   "still_cold": true,
+   "rationale": "Derived from the model itself, not from any prior NN run — so it cannot 'select' a legacy solution. Supplies both correct level AND shape, fixing exactly the failure mode that killed the analytic arm, and doubles as the arbitration benchmark."
+  },
+  {
+   "name": "Shape-aware analytic init (repaired analytic arm)",
+   "construction": "v0(x) = logK + w(Z) - (1/delta-weighted) damage term built from the regime-correct log N(y), with w(Z) from the deterministic two-capital 1-D BVP in Z; initialize all four regimes from the SAME base so cross-regime differences V'-V at initialization are the small, correctly-signed A_g and N(y) terms; fit controls to the FOCs given v0 rather than to constants.",
+   "still_cold": true,
+   "rationale": "The analytic arm's post-mortem showed level-right/shape-wrong dies through exp(-(V'-V)/xi); tying all regimes to one base bounds the jump exponents by construction. Cheap (minutes of prep), no pretrained weights."
+  },
+  {
+   "name": "xi-homotopy curriculum (run the abandoned M6)",
+   "construction": "Train cold at xi = infinity (logxi at the top of the sampled range only), converge; then continuation steps widening the sampled logxi range downward (inf -> 0.1 -> 0.05 -> floor), each step warm-starting from the previous converged weights of the SAME lineage.",
+   "still_cold": true,
+   "rationale": "Standard continuation for robust control: the nonlinearity that plausibly kills cold starts is the 1/xi jump exponential, which vanishes at xi = infinity. Every warm start in the chain is self-generated, so any 'selection' finding survives. Also directly relevant to the running deep-xi wave."
+  },
+  {
+   "name": "Jump-smoothed all-regime anchor with FOC-fit controls (repaired anchor arm)",
+   "construction": "Anchor as in M5 but (a) anchor ALL regimes to the arm's own trained terminal value plus the jump-implied level offsets V_pre ≈ V_post - closed-form expected-jump correction J/(delta+J)*(V_post - V_pre-proxy), so cross-regime level differences are initialized consistently, and (b) fit control nets to the FOCs given the anchored value instead of starting them cold.",
+   "still_cold": true,
+   "rationale": "The anchor arm's diagnosed weaknesses were cold controls lagging and no cross-regime level tying; this fixes both while remaining free of any legacy NN solution."
+  },
+  {
+   "name": "Convex-combination basin probe (diagnostic, not a performance init)",
+   "construction": "Fit fresh nets to (1-t)*V_ref + t*V_nber (and likewise for controls) on the fixed sample for t in {0.25, 0.5, 0.75}; train each under the reference config and record which delivered economy it converges to.",
+   "still_cold": false,
+   "rationale": "Maps the basin boundary between the two attractors in function space; combined with E5 it distinguishes 'two separated approximate fixed points' from 'one flat valley,' which is exactly the interpretive fork the note leaves open."
+  }
+ ]
+}

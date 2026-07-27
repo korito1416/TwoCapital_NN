@@ -1,0 +1,82 @@
+==============================================================================
+ EIGENSPECTRUM OF THE LINEARIZED HJB OPERATOR  A = L - delta*I
+ Terminal regime PostDamagePostTech (states logK, Z, Y; NO jump terms)
+ FD generator (upwind drift + central diffusion + central cross), reused from
+ scratchpad/prec_fd/fd_terminal.py, at the converged controls & frozen robust drift.
+==============================================================================
+
+ xi = 0.05   lam3 = 0.1667   delta = 0.01
+ fine grid   : 25x31x25 = 19375 nodes
+ coarse grid : 17x21x17 = 6069 nodes
+ FD solve accuracy (fine): econ maxR=8.14e-04  scheme maxR=1.27e-09
+
+------------------------------------------------------------------------------
+ EXACT ALGEBRAIC CHECKS (should be ~0 to machine precision)
+------------------------------------------------------------------------------
+   || L * 1 ||_inf              = 3.331e-16   (generator kills constants)
+   || A*1 + delta*1 ||_inf      = 3.417e-16   (=> A*1 = -delta*1 exactly)
+
+------------------------------------------------------------------------------
+ SMALLEST-MAGNITUDE EIGENVALUE = THE LEVEL / GAUGE MODE
+------------------------------------------------------------------------------
+   smallest |eig(A)|            = 1.000000e-02
+     real part                 = -1.000000e-02
+     imag part                 = 0.00e+00
+   target -delta               = -1.000000e-02
+   |smallest_eig - (-delta)|   = 1.214e-17
+   -> smallest eigenvalue matches -delta to high precision.  YES.
+
+   Eigenvector constancy (gauge mode):
+     std(v)/|mean(v)|          = 5.725e-15    (0 = perfectly constant)
+     |<v,1>|/(||v|| ||1||)     = 1.000000    (1 = perfectly constant)
+   Rayleigh quotient of the CONSTANT direction  ||A*1||/||1|| = 1.000000e-02
+     (the constant is squashed by A to magnitude delta -> it IS a near-null direction)
+   Smallest RIGHT SINGULAR vector of A (least-squares Hessian null direction):
+     std(v)/|mean(v)|          = 1.111e+00
+     |<v,1>|/(||v|| ||1||)     = 0.6688
+     NOTE: A is NON-NORMAL (advection-dominated), so the smallest-singular direction
+     is a mix, NOT the pure constant; but sigma_min < delta means the least-squares
+     level identification is even WEAKER than the -delta eigenvalue alone suggests.
+   Representative BULK eigenvector (for contrast):
+     std(v)/|mean(v)|          = 2.082e+00    (>> gauge: real structure)
+     |<v,1>|/(||v|| ||1||)     = 0.4330    (<< 1: not constant)
+
+------------------------------------------------------------------------------
+ SPECTRAL GAP AND CONDITIONING
+------------------------------------------------------------------------------
+   next |eig| after gauge      = 1.7997e-02  (gap factor x1.8 above -delta)
+   next few |eig|              = 1.800e-02, 1.800e-02, 1.831e-02, 1.831e-02, 1.881e-02
+   bulk |eig|_max              = 1.5940e+00
+   smallest singular value     = 5.867275e-04  (< delta: non-normal amplification)
+   largest  singular value     = 2.2204e+00
+   condition number cond(A)    = 3.7843e+03  (= bulk scale / delta)
+
+------------------------------------------------------------------------------
+ GRID-INDEPENDENCE OF THE GAUGE EIGENVALUE (operator property, not discretization)
+------------------------------------------------------------------------------
+   fine   25x31x25: smallest |eig|=1.000000e-02  eig_overlap=1.00000  cond=3.784e+03
+   coarse 17x21x17: smallest |eig|=1.000000e-02  eig_overlap=1.00000  cond=1.364e+03
+   |fine - coarse| smallest |eig| = 6.592e-17   (both == delta: grid-INDEPENDENT)
+
+==============================================================================
+ INTERPRETATION (for the low-xi worst-case density collapse)
+==============================================================================
+   The constant (level) function is an EXACT eigenvector of the linearized HJB operator
+   A = L - delta*I with eigenvalue exactly -delta = -0.01 (verified to 1e-17), and it is
+   the SMALLEST-magnitude eigenvalue: the next mode sits at ~1.8*delta and every bulk
+   mode carries the O(drift/diffusion) transport scale (|lambda|_max ~ 1.6), hundreds of
+   times larger. So A squashes the level/gauge direction to magnitude delta while acting
+   O(100x) more stiffly on every mode with spatial structure -- the level is a near-null
+   (gauge) direction of the stationary operator. The least-squares HJB loss Hessian ~ A^T A
+   inherits this: its smallest singular value is ~delta or, because A is non-normal
+   (advection-dominated), even SMALLER (here 6e-4 < delta), so the level is pinned even
+   more weakly than -delta alone implies. Concretely the stationary HJB determines the
+   value LEVEL only to ~ residual/delta: a residual ~1e-3 leaves the level ambiguous to
+   ~1e-1. The damage-jump distortion g = exp(-(1/xi)(V^l - V)) reads this weakly-identified
+   ABSOLUTE level, and the prefactor 1/xi amplifies the ~0.1 level ambiguity into an
+   O(0.1/xi) error in the exponent -- ~2 at xi=0.05, ~10 at xi=0.01 -- which is exactly why
+   the worst-case damage-jump DENSITY (unlike the economics or temperature density, which
+   depend on value DIFFERENCES / gradients = the well-identified bulk modes) becomes
+   unreliable below xi ~ 0.025. The mechanism is a genuine near-null gauge direction of the
+   operator, confirmed to machine precision and shown grid-independent (fine == coarse).
+

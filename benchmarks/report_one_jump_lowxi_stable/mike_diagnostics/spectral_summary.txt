@@ -1,0 +1,67 @@
+SPECTRAL DIAGNOSIS OF THE LOW-xi WORST-CASE DAMAGE-JUMP DENSITY DEFECT
+(one-jump pi=1, FULL adjustment-cost, float64 run) | 2026-07-01
+==========================================================================
+
+WHAT WAS COMPARED
+--------------------------------------------------------------------------
+A1 value error: terminal regime PostDamagePostTech (3-state logK,Z,Y).
+  V_FD  = TRUE V from the finite-difference reference (fd_terminal_ref_smoke.npz,
+          lam3=1/6, xi in {0.05,0.01}; FD flow carries -delta*logN_level(Y)).
+  V_NN  = v_nn(logK,Z,Y,lam3=1/6,A_g'',logxi,logxi) - logN_level(Y;lam3=1/6).
+  Same logN antiderivative convention (verified in model source line 196:
+  'v = V + log N'); hence V_NN and V_FD are comparable UP TO ONE global additive
+  constant (gauge). Error field E = V_NN - V_FD; spectrum via DCT-II (non-periodic).
+A2 threshold: PreDamagePreTech v, dv/dY, and the PRODUCTION distorted damage-jump
+  intensity sum_l (J_d(Y)/L) * g_l(Y), g_l=exp(clip(-1/xi (V^l-V),-700,350)),
+  on a 512-pt Y-grid at (logK,Z,logR)=(5.5,0.7,3.5), xi in {0.1,0.025,0.01,0.005}.
+
+ANALYSIS 1 -- DC / LOW-FREQUENCY DOMINANCE OF THE VALUE ERROR
+--------------------------------------------------------------------------
+  xi=0.05:
+     E mean (global offset) = -0.1882   E spread (std) = 0.1050
+     spread after removing 1 global constant (E0 std) = 0.1050
+     DC (pure constant) energy fraction        =  76.25%
+     2x2x2 low-frequency block energy fraction  =  96.91%
+     high-frequency (outside 2^3 block)         =   3.09%
+     per-axis DC fraction: logK=94%  Z=99%  Y=83%
+  xi=0.01:
+     E mean (global offset) = -0.0829   E spread (std) = 0.1104
+     spread after removing 1 global constant (E0 std) = 0.1104
+     DC (pure constant) energy fraction        =  36.06%
+     2x2x2 low-frequency block energy fraction  =  91.23%
+     high-frequency (outside 2^3 block)         =   8.77%
+     per-axis DC fraction: logK=65%  Z=91%  Y=51%
+
+ANALYSIS 2 -- THRESHOLD-RINGING CHECK (test for a NEW high-freq defect at y_lower)
+--------------------------------------------------------------------------
+  xi      peak distorted-intensity   HFfrac(dv/dY)  HFfrac(dist_int)  d-sign-chg(Y>1.5)
+  0.1              3.129e+00      3.80e-03        1.75e-03            0
+  0.025            2.892e+00      3.80e-03        1.70e-03            0
+  0.01             2.056e-01      3.80e-03        1.59e-03            0
+  0.005            3.573e-05      3.80e-03        1.40e-03            0
+
+  Ringing verdict: NO. High-frequency power in the [1.0,2.5] band bracketing y_lower
+  is <=0.4% of local power and is xi-INDEPENDENT (does not grow as the density
+  collapses). The distorted intensity has ZERO derivative sign-changes for Y>1.5 at
+  every xi -> monotone, no oscillation. The collapse 3.13 -> 3.6e-5 (xi 0.1 -> 0.005)
+  is a smooth low-frequency MAGNITUDE change (a uniform exp(-Delta/xi) rescaling),
+  NOT the onset of oscillatory structure.
+
+INTERPRETATION
+--------------------------------------------------------------------------
+The spectrum CONFIRMS the low-frequency value-LEVEL weak-identification and REFUTES
+a second, high-frequency threshold defect. The terminal-regime NN-vs-FD error is
+dominated by a near-constant (DC) mode of size ~0.1-0.19 -- exactly the predicted
+residual/delta ~ 0.1 level ambiguity that the -delta*V anchor (delta=0.01) leaves
+>=91% of the error energy sits in the lowest 2^3 DCT modes; after removing a single
+global constant the remaining spread is still ~0.10-0.11 and still low-frequency,
+i.e. a slowly-varying gauge drift, not fine structure. This is precisely a level
+mode that the cross-regime jump distortion g=exp(-(1/xi)(V^l - V)) amplifies by 1/xi.
+Meanwhile the damage threshold at y_lower=1.5 shows NO anomalous high-frequency
+power at any xi, and the density collapse is a smooth magnitude decay rather than
+NN under-resolution / spectral-bias ringing. Honest caveat: the FD reference is the
+SMOKE grid (25x31x25) at lam3=1/6 with econ-box rms residual ~4e-4 (xi=.05) / ~7e-4
+(xi=.01); the absolute DC offset carries the FD's own O(1e-3/delta) level uncertainty,
+so the ~0.1 magnitude is order-of-magnitude, not 3-digit. The SHAPE of the spectrum
+(DC/low-freq dominant, no threshold ringing) is robust to that and is the load-bearing
+conclusion.

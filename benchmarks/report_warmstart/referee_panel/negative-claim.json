@@ -1,0 +1,99 @@
+{
+ "verdict": "A valuable and unusually well-documented study, but the headline negative claim — \"a warm start is REQUIRED, not a speedup\" — is not established by the evidence presented. What is established is: cold and terminal-anchored starts did not converge under ONE optimizer configuration (warmup–cosine with a control learning rate peaking at 4e-3, which is 400× the 1e-5 the paper itself reports using to train this model COLD for 2M iterations) with TWO seeds per method, of which only one per method actually collapsed. \"Required\" is a universally quantified claim over initialization×optimization protocols; the study tested one point of that space, and it is a point known a priori to be hostile to cold starts (hot control LR chasing a flat, meaningless value function is a textbook route to the observed no-investment collapse). Worse, the study's own strongest finding — two seed-reproducible, paper-grade-residual solutions whose welfare levels differ by 0.6 (≈ e^0.6 ≈ 82% in permanent consumption-equivalent units under δ·logC flow utility, since a constant log-consumption shift Δc gives ΔV = Δc) — implies the solved system is under-identified by the training residual, which makes \"accuracy cannot arbitrate\" the wrong resting place: it demands independent arbitration (simulated-welfare verification of the value level; finite-difference cross-check in the 3-state terminal regime) that the repo already has the machinery for. Major revision: run the paper-replication cold arm and the three targeted cold-start repairs below (each fixing a failure mechanism the study itself diagnosed), add the arbitration experiments, and restate the negative claim as bounded (\"no protocol among the tested families converges\") or drop it if any arm passes.",
+ "major_points": [
+  "The negative claim is confounded with the optimizer configuration. All arms ran the production warmup-cosine schedule (control LR peak 4e-3); the paper's own reported recipe for this model is lr_V = lr_alpha = 1e-5 for 2M iterations from a cold start (AGENTS.md sec. 12). Until the paper's own configuration is run cold and shown to fail, the finding is at most 'the accelerated production schedule requires a warm start' - a different and much weaker claim. This single arm is the highest-value experiment in the entire revision.",
+  "n = 2 seeds per method cannot support 'does not converge'. Only ONE seed per failing method actually collapsed to the degenerate economy (cold_s1, anchor_s1); the other seed of each landed elsewhere (I_g = 25.0, 30.1). Two seeds give a 95% Clopper-Pearson interval on the collapse probability of roughly [0.01, 0.99]. Reproducibility claims for the converged arms (nber, perturb) also rest on 2 seeds. Minimum 3 seeds for every arm in the revision, 5 for any arm whose seed-agreement is itself a headline.",
+  "The cold/warm boundary is never defined, yet the headline depends on it. The 'anchor' arm regresses onto the arm's OWN trained terminal-regime value function (no external weights - still cold); 'analytic' uses only closed-form structure (cold); 'nber' imports trained weights from a different historical model (warm). Draw this line explicitly in the report: COLD = uses no parameters produced by prior optimization of this or any related model (closed-form targets, supervised fits to analytic functions, self-generated within-arm pretraining, and pure training-procedure modifications such as curricula/homotopies/LR phases all remain cold; imported checkpoints, including nber and perturb, are warm). Under this definition the study tested exactly three cold families, two of which failed for mechanisms the study itself diagnosed and did not repair.",
+  "Two paper-grade solutions 0.6 apart in welfare level is an identification failure of the training objective, not a fact about warm starts to be reported agnostically. Under delta*logC flow utility a 0.6 value-level gap is approximately an 82% permanent consumption-equivalent difference; at most one of these objects solves the HJB system. The study must arbitrate, and can: (a) Monte Carlo verification of the value level (simulate each solution's own policy, compute the realized discounted objective, compare to V(x0)); (b) finite-difference cross-check in the 3-state post-damage post-tech regime, where the repo already has a validated FD solver. 'Accuracy does not arbitrate' currently means only 'the training residual does not arbitrate' - which is precisely the known level-anchor defect (residual sensitivity to the value LEVEL is only delta = 0.01), and the note should say so.",
+  "The residual comparison is evaluated along the REFERENCE'S simulated path only. The claim that nber's pre-damage pre-tech error is 10x lower than the reference's along the reference's own path is striking but one-sided: report HJB AND first-order-condition residuals on (i) the full sampling box, (ii) each candidate's OWN simulated path, (iii) the rival's path, for both candidates. If the ordering flips across (i)-(iii), the 10x headline is a path-selection artifact.",
+  "The degenerate no-investment economy is never diagnosed. If the collapsed nets approximately satisfy the FOCs (flat V => V_logK ~ 0 => corner i ~ 0 is self-consistent), the collapse is a spurious fixed point of policy iteration, which both explains the failure and prescribes the repair (initialize controls at FOC-consistent constants / value with nonzero V_logK) - turning 'warm start required' into 'break the flat-value fixed point at initialization'. Evaluate and report the FOC residuals of cold_s1 and anchor_s1.",
+  "Finding 3 (neighborhood-stable, not point attractor) confounds perturbation with schedule reheat, and tests one noise amplitude, one direction. The 300k-vs-1M difference is that the 1M cycle reheats the control LR to peak; add a no-reheat 1M control (continue the cosine anneal) to separate 'perturbation moves the solution' from 'reheat moves the solution'. Add an amplitude sweep and the symmetric experiment from the nber base to establish whether nber is likewise an attractor.",
+  "Language: this is not an RCT - randomization is over seeds only, with n = 2 and no inferential statistics. Call it a seeded controlled comparison. Similarly 'required' must become 'not achieved under the tested protocols' unless the revision's grid (below) is exhausted."
+ ],
+ "minor_points": [
+  "The exp-clamp ([-60,60]) was added to models_warmstart/ mid-study for all arms, but the reference base was trained WITHOUT it. Report per-arm clamp activation counts during training to substantiate the 'inactive where no overflow' claim, and state the reference/arm asymmetry in the report body, not only in STUDY.md.",
+  "The 300k loss table's 'did not start' cell (analytic, pre-damage pre-tech) and the '(stopped 196k)' cells should be marked N/A and excluded from tier statements; the figure caption discloses this but the table implies comparability.",
+  "Specify the perturbation exactly in the report: distribution of the 10% relative noise, whether biases and output layers are included, per-layer or global scaling (STUDY.md gives seeds 11/22 but not the construction).",
+  "Report the welfare gap in consumption-equivalent units (0.6 in value units ~ 82% permanent consumption under log utility) - PIs will immediately see that both solutions cannot be right, which sharpens rather than weakens the selection finding.",
+  "Year-60 I_g is a single-point statistic; add a path-integrated distance (e.g., RMS over the 60-year path, per control) to the arm tables.",
+  "Describe what the nber_legacy base actually encodes (4-regime NBER calibration: which parameters differ from the current pi=1 model) - 'selection by warm start' is uninterpretable without knowing what information the warm start carries.",
+  "The 'seeds disagree = convergence diagnostic' claim is useful but with n=2 agreement can be coincidental; state it as a necessary-not-sufficient screen.",
+  "The already-launched deep-xi wave should pre-register the same convergence gate and arbitration metrics demanded here, before its results are seen."
+ ],
+ "demanded_experiments": [
+  {
+   "name": "E1: Paper-replication cold arm (decisive for the negative claim)",
+   "design": "Cold random init (current I1 construction), lr_V = lr_alpha = 1e-5 constant (no warmup-cosine, no 400x control LR), 2M iterations, batch 128, same sampling distribution and backward regime order, >= 3 seeds. Everything else identical to the study. This is the configuration the paper itself claims trained the model cold.",
+   "decides": "If any seed passes the convergence gate (fixed-common-sample HJB RMS <= 3e-3 in every jump state at xi=0.05, year-60 I_g non-degenerate (> 20) and within 15% across seeds), the headline becomes 'the accelerated schedule requires a warm start; the paper's schedule does not'. If all 3 seeds fail, this is the single strongest piece of evidence for the negative claim - and evidence the published training claim does not reproduce."
+  },
+  {
+   "name": "E2: Monte Carlo value-level verification (arbitrates reference vs nber)",
+   "design": "For each converged solution (reference, nber_s1) at xi = 0.05 and at xi -> infinity: simulate >= 10k paths from x0 under the solution's OWN policy (and, for the robust case, its own worst-case h and jump distortions g, applied consistently to the simulated law of motion), compute the realized discounted objective including the xi-penalty terms, compare to the network V(x0). Also run each policy under the rival's V for the distortions to bound cross-effects.",
+   "decides": "Which value LEVEL is correct: |V_sim(x0) - V_nn(x0)| for each candidate, judged against the 0.6 gap. A candidate whose simulated welfare misses its own network level by >> the Monte Carlo standard error is not a solution; if both miss, the level-anchor defect is confirmed as the mechanism and the 'selection' finding must be reframed as under-identification."
+  },
+  {
+   "name": "E3: Finite-difference cross-check in the terminal regime + upstream re-solve",
+   "design": "Solve post-damage post-tech (3 states, no jumps) by the repo's existing FD/ADI solver at xi = 0.05 on the training box. Compare reference and nber value, V_logK, V_Z, and policies to FD on a common grid. Then re-train the three upstream regimes twice, injecting the FD terminal value as the frozen downstream input, warm-started from each candidate.",
+   "decides": "Sup-norm and RMS distance of each candidate's terminal-regime V and policies from FD (whichever exceeds tolerance ~ its own residual scale is wrong); whether the upstream 'alternative solution' survives when the terminal condition is pinned by an independent method."
+  },
+  {
+   "name": "E4: Two-sided residual audit",
+   "design": "Evaluate HJB residual AND all three FOC residuals for reference and nber on: (i) the full LHS sampling box, (ii) each candidate's own simulated 60-year path, (iii) the rival's path; per jump state, at xi in {0.05, 0.1, inf}. Additionally report FOC residuals of the collapsed arms (cold_s1, anchor_s1) on the box.",
+   "decides": "Whether the '10x lower error along the reference's own path' ordering is stable across evaluation sets (if it flips, it is a path-selection artifact); whether the degenerate economy is a near-fixed-point of the FOC system (small FOC residual at i ~ 0, flat V) - which converts the collapse from mystery to mechanism and directly motivates initialization P1/P4 below."
+  },
+  {
+   "name": "E5: Cold-start rescue grid (the bounded negative)",
+   "design": "Run, in the priority order of the initialization_proposals list, each still-cold arm at 300k screening with >= 3 seeds under a pre-registered gate (any seed reaching fixed-sample HJB RMS <= 2x the nber tier in all states advances to 1M). Optimization variants that remain cold: (O-a) control LR peak cooled to 1e-4 and to 1e-5; (O-b) value-first phase - controls frozen at FOC-consistent constants for the first 100k, then joint; (O-c) xi-curriculum - sample logxi in [3,5] for 200k, widen linearly to [-3,5] by 500k; (O-d) jump-intensity homotopy - multiply all J by kappa ramped 0 -> 1 over the first 300k; (O-e) restarts-with-selection - 8 cold 50k runs, continue the best-by-fixed-sample-residual to 1M (selection uses no external solution, still cold). Hold architecture, batch, sampling, float32, and backward order fixed throughout.",
+   "decides": "The negative claim may be declared established ('no cold protocol among K families x 3 seeds converges, under a stated gate and <= 2M-iteration budget') only if E1 AND the top four grid arms (P1+O-b, P2, O-c, O-a) all fail the gate for all seeds. If any arm passes, the paper's claim flips to 'cold start converges under X; warm starts additionally select among solutions' - and the passing arm becomes the study's most important product, because it yields a solution not inheriting any base's bias."
+  },
+  {
+   "name": "E6: Basin geometry - perturbation amplitude sweep, both bases, reheat-controlled",
+   "design": "Perturbation noise epsilon in {0.02, 0.05, 0.1, 0.2, 0.5} x 3 seeds, applied to BOTH the reference base and the nber base; retrain each under (i) the 300k anneal and (ii) a 1M cycle WITHOUT LR reheat (continue the cosine from its 300k-equivalent point) and (iii) the reheated 1M cycle as run.",
+   "decides": "For each (base, epsilon, schedule): distance of delivered year-60 (I_g, I_d) to the reference vs to nber (nearest-attractor classification). Decides whether reference and nber are distinct basins with an estimable boundary radius; whether Finding 3's drift is caused by the LR reheat (drift present in (iii) but not (ii)) or by the perturbation itself; and whether nber heals back like the reference did at 300k."
+  }
+ ],
+ "initialization_proposals": [
+  {
+   "name": "P1: FOC-constant controls + analytic output-bias value (targets the diagnosed flat-value collapse)",
+   "construction": "Value net: standard small random weights, final-layer bias set so v(x0) equals the analytic BGP level, with an explicit +logK feature or a supervised 5k-step fit to v = logK + const so V_logK ~ 1 at init. Control nets: output bias set to the constants solving the sec. 8 FOCs at V_logK = 1, V_Z = 0, V_logR = analytic slope (e.g., i_g* ~ 0.126 from the BGP calculation already in the team's S1 note), weights near-zero-gain. Combine with the value-first frozen-control phase (E5 O-b).",
+   "still_cold": true,
+   "rationale": "Directly breaks the degenerate fixed point (flat V => zero MU-side => i ~ 0 self-consistent) that E4 is expected to confirm as the collapse mechanism. Highest P(rescue) x diagnostic value after E1: uses only closed-form structure, so success yields a bias-free solution and failure sharply narrows the mechanism to shape (not level or controls)."
+  },
+  {
+   "name": "P2: Shape-aware analytic init (repairs the analytic arm's diagnosed failure)",
+   "construction": "Supervised pre-fit (the existing analytic-arm pipeline) but to a shape-carrying closed-form target: v0(x) = logK - logN(y; l) + a*Z + b*logR with (a, b) from the analytic BGP marginal values, fitted per jump state so that the jump exponent (V_post - v0)/xi is bounded on the box BEFORE training starts (verify max exponent < 60 at logxi = -3 as an acceptance test of the init itself). Controls at FOC constants as in P1.",
+   "still_cold": true,
+   "rationale": "The study's own post-mortem says level-right/shape-wrong x 1/xi amplification killed the analytic arm and 'a shape-aware variant would be the fix' - but it was never run. The negative claim cannot stand while the study's own prescribed fix is untested. The pre-training acceptance test makes failure interpretable (training dynamics, not initialization overflow)."
+  },
+  {
+   "name": "P3: Anchor v2 - self-bootstrapped value anchor WITH FOC-implied controls",
+   "construction": "As the existing anchor arm (each upstream value net regressed onto the arm's own trained post-damage post-tech value), but additionally initialize each regime's control nets by a short supervised fit to the FOC-implied controls computed from the anchored value net's own derivatives (solve the three sec. 8 FOCs pointwise on a LHS sample, fit 5k steps). No external weights anywhere.",
+   "still_cold": true,
+   "rationale": "The screening verdict diagnosed the anchor arm's problem as 'value anchored but cold controls lag' (plus pre-damage instability spikes); this closes exactly that gap. Anchor is the most principled cold family (it reproduces the backward induction structure), so its repaired failure would carry the most evidential weight for the negative claim."
+  },
+  {
+   "name": "P4: Cooled-control-LR cold start (O-a as an arm in its own right)",
+   "construction": "Standard cold random init (unchanged I1), warmup-cosine retained for the value net, control LR peak reduced 4e-3 -> 1e-4 (and a 1e-5 variant = the paper's value), 1M iterations, >= 3 seeds.",
+   "still_cold": true,
+   "rationale": "Isolates the single most suspicious confound: the production control LR is 400x the paper's, and a hot control step on a meaningless early Hamiltonian is the most plausible driver of the no-investment collapse. Cheap, one-knob, and its failure would rule out the leading benign explanation of the study's negative result."
+  },
+  {
+   "name": "P5: xi-curriculum and jump-intensity homotopy (procedural continuations)",
+   "construction": "Curriculum: sample logxi in [3,5] (near uncertainty-neutral, where the HJB is close to linear in the jump bracket) for the first 200k, widen the lower end linearly to -3 by 500k, then full range. Homotopy: multiply all jump intensities J by kappa(t) ramped 0 -> 1 over the first 300k, so early training solves the decoupled diffusion problem. Standard cold init; each separately, >= 3 seeds.",
+   "still_cold": true,
+   "rationale": "Both target the known amplification mechanisms (1/xi in the jump belief; cross-regime coupling through J) without importing any solved object. Moderate rescue probability, high evidential value: if cold training converges on the decoupled/neutral problem and fails only as the continuation closes, the negative claim localizes to the jump-coupling term rather than to cold starts per se."
+  },
+  {
+   "name": "P6: Restarts-with-selection ensemble (bounds the bad-luck explanation)",
+   "construction": "8 independent cold inits (distinct MODEL_INIT_SEED), 50k iterations each; select the run with the best fixed-common-sample residual summed over jump states; continue only it to 1M. Selection statistic uses no reference or external solution. 2 replications of the whole procedure.",
+   "still_cold": true,
+   "rationale": "Lowest rescue probability, but it is the only arm that converts '2 seeds failed' into a statement about the cold-start success probability (bounds p < ~0.2 at 90% if all 16 short runs head degenerate), which the negative claim needs and currently lacks."
+  },
+  {
+   "name": "Cold/warm boundary (adopt in the report)",
+   "construction": "COLD iff the initialization and training procedure use no parameters produced by prior optimization of this model or any related model (no imported checkpoints). Closed-form/analytic targets, supervised fits to closed-form functions, within-arm self-bootstrapping (anchor), curricula, homotopies, LR phases, and restart-selection are COLD. nber and perturb are WARM. Any arm that fits to a previously trained network's outputs (even via distillation) is WARM.",
+   "still_cold": true,
+   "rationale": "Without this line the headline is unfalsifiable: any rescue could be dismissed as 'secretly warm'. The line above is the standard information-provenance criterion - what matters is whether information from a prior solve enters, not how clever the construction is."
+  }
+ ]
+}

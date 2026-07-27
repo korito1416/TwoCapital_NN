@@ -1,0 +1,80 @@
+================================================================================
+A/B EXPERIMENT: is the lambda3 worst-case distortion shift driven by delta, not code?
+================================================================================
+Question : The damage-curvature (lambda3) worst-case distortion at xi=0.1 changed from
+           near-uniform (pre-FOCIr) to strongly skewed (current FOCIr). Is that shift
+           caused by the delta CALIBRATION change (delta: 0.025 -> 0.01), or by the
+           FOCIr code refactor?
+Method   : Retrain the CURRENT FOCIr code with delta forced back to 0.025 (everything
+           else at CURRENT values), warm-started from the delta=0.01 two-stage base,
+           then simulate and read lambda3_weights_distorted at xi=0.1.
+Predicts : If delta is the driver, the delta=0.025 retrain should REPRODUCE near-uniform
+           xi=0.1 weights ~ [0.20,0.20,0.20,0.20,0.20] -> code refactor EXONERATED.
+           If it stays skewed -> the code refactor contributes -> deeper look needed.
+
+REFERENCE VALUES (lambda3 distorted weights at xi=0.1, over grid [0, 1/12, 1/6, 1/4, 1/3]):
+  pre-FOCIr delta=0.025 : [0.203, 0.201, 0.200, 0.199, 0.197]   (near-uniform)
+  current   delta=0.01  : [0.006, 0.023, 0.080, 0.244, 0.647]   (skewed to worst)
+
+--------------------------------------------------------------------------------
+STATUS: SUBMITTED (interim) -- final lambda3 readout appended after DAG completes.
+Submitted: 2026-07-01 10:36 CDT
+--------------------------------------------------------------------------------
+
+DELIVERABLE 1 -- delta=0.025 CONFIRMED IN THE RUNNING JOB (three independent sources):
+  (a) job stderr : "[delta-override] params.PARAMS['δ']: 0.01 -> 0.025 (MODEL_DELTA)"
+  (b) params.txt written by the model's own export_parameters() (from self.params):
+        δ: 0.025
+        π: 0.04
+        tech_jump_intensity_scale: 1.0
+  (c) model is training with these params (job RUNNING).
+
+SETUP (single-variable isolation of delta; everything else at CURRENT values):
+  model family     : TWO-STAGE tech, pi=0.04, TechIntensityScale=1.0 (matches the
+                     pre-FOCIr comparison; NOT the one-jump pi=1 model).
+  delta            : 0.025  (the OLD value)   [only variable changed]
+  Y0 (train)       : current default (params.py Y0=1.2)
+  simulation Y0    : 1.2 (current)
+  simulation xi    : 0.1, 0.3, 5.0, 148.6   (0.1 is the target readout)
+  warm-start base  : output_001/TwoStageTech_LR_warmup_cosine_40e-5,40e-5,40e-5,40e-5_
+                     128_neurons_32_#HiddenLayer_4_num_iterations1000000  (delta=0.01,
+                     all 6 regimes, loss_v ~1.4e-3)
+  iterations/regime: 300000  (warm-started; value LEVEL must re-converge since values
+                     scale ~1/delta [delta=0.025 values ~0.4x the delta=0.01 values],
+                     but the SHAPE transfers -> moderate iters suffice for the
+                     qualitative xi=0.1 lambda3 weight)
+  LR / schedule    : 40e-5,40e-5,40e-5,40e-5 / warmup_cosine  (matches the base)
+  seed             : MODEL_SEED=1
+
+HOW delta WAS OVERRIDDEN WITHOUT TOUCHING params.py OR MODEL CODE:
+  models/params.py has NO delta entry in _ENVIRONMENT_OVERRIDES (only sigma/Gamma/theta/psi0),
+  so a NON-INVASIVE sitecustomize hook was used instead:
+    ab_delta_override/sitecustomize.py  -- auto-imported at interpreter startup when its
+      dir is on PYTHONPATH; when MODEL_DELTA is set it installs a meta-path finder that
+      sets params.PARAMS["δ"] = MODEL_DELTA right after `import params` (the dict is shared
+      by reference via `from params import PARAMS`, so every model/sim consumer sees it).
+      No-op when MODEL_DELTA is unset. params.py and all model code are UNCHANGED.
+  NOTE: the lambda3 distorted-weight readout depends only on xi and the TRAINED value nets
+  (g^l = exp(-(1/xi)(V^l - V))); SimulationDeterministic.py uses NO live delta, and
+  infer_saved_economic_parameters() does NOT read delta back -- so delta only needs to be
+  (and is) applied at TRAINING time. That is exactly what this run does.
+
+OUTPUT DIR (new; existing output*/ never touched):
+  output_delta025_ab/TwoStageTech_DELTA025_AB_Pi0p04_TechIntensityScale_1p0_LR_warmup_cosine_40e-5,40e-5,40e-5,40e-5_128_neurons_32_#HiddenLayer_4_num_iterations300000
+
+JOB IDS (backward DAG, post -> pre, afterok-chained):
+  PostDamagePostTech    51346357
+  PostDamageIntermTech  51346358  (afterok:51346357)
+  PostDamagePreTech     51346359  (afterok:51346358)
+  PreDamagePostTech     51346360  (afterok:51346357)
+  PreDamageIntermTech   51346361  (afterok:51346358:51346360)
+  PreDamagePreTech      51346362  (afterok:51346359:51346361)
+  Simulation (det)      51346363  (afterok:51346362)  -> writes lambda3_weights_distorted.txt
+  Plot                  51346365  (afterok:51346363)
+
+READOUT (after completion) will be at:
+  <EXPORT_FOLDER>/PreDamagePreTech/SimulationOutputs_ξ_0.100/lambda3_weights_distorted.txt
+
+================================================================================
+DELIVERABLE 2 -- RESULT (delta=0.025 retrain, xi=0.1):   [ TO BE FILLED AFTER DAG COMPLETES ]
+================================================================================
