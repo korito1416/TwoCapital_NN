@@ -1,7 +1,8 @@
-# Ignore generated runtime scripts
-bash/
+# Ignore consolidated job logs and generated runtime scripts (logging/scripts/)
+logging/
 
-# Ignore job output directories (job-out, job-outs)
+# Legacy log/script directories (pre-consolidation); kept ignored for old checkouts
+bash/
 job-outs/
 job-out*
 
@@ -45,3 +46,11 @@ __pycache__/
 
 # Ignore any Slurm / task output files
 *.out
+
+# report build trees + stderr logs
+_build/
+*.err
+
+# experiment result artifacts (torch ckpts, logs) — keep code only
+experiments/*/results/
+*.pt
